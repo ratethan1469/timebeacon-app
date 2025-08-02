@@ -1,16 +1,20 @@
 {
-  "version": "2.2.0",
-  "name": "Enhanced Dashboard with Current Week Data & Proper Add Entry",
-  "deployedAt": "2025-07-13T22:30:00Z",
-  "commit": "auto-generated",
+  "version": "3.0.0",
+  "name": "Multi-Tenant Authentication System with URL-Based Routing",
+  "deployedAt": "2025-08-02T23:18:00Z",
+  "commit": "7bf1662",
   "features": [
-    "Fixed mock data to show current week (July 13, 2025)",
-    "Updated week format to Sunday-Saturday",
-    "Redesigned navigation layout: Previous/Date/Next on same line",
-    "Add Entry button below navigation with Current Week button",
-    "Proper Add Entry popup modal with form validation",
-    "Fixed random Salesforce entry issue"
+    "Multi-tenant database schema with company/user isolation",
+    "Subscription management with role-based permissions (Owner, Admin, Manager, Employee, Viewer)",
+    "URL routing structure: app.timebeacon.io/{accountId}/{visitorId}",
+    "Team management with user invitation and permissions settings",
+    "Manager insights for team performance monitoring",
+    "Privacy-first local storage with multi-tenant support",
+    "Context-aware database operations with proper data isolation",
+    "Permissions management UI with role assignment",
+    "Numeric account/visitor IDs in URLs",
+    "Enhanced authentication system with subscription features"
   ],
-  "rollbackCommand": "git revert HEAD && git push origin main",
-  "previousVersion": "2.1.0"
+  "rollbackCommand": "git revert 7bf1662 && git push origin main",
+  "previousVersion": "2.2.0"
 }
