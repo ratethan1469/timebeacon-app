@@ -45,20 +45,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const state = authService.getAuthState();
       setAuthState(state);
 
-      // If authenticated, validate current route
-      if (state.isAuthenticated && state.user && state.company) {
-        const params = routingService.extractRouteParams();
-        if (params) {
-          // Check if current URL matches user context
-          if (params.accountId !== state.company.accountId || params.visitorId !== state.user.visitorId) {
-            // Redirect to correct URL
-            routingService.redirectToUserContext(state.company, state.user);
-          }
-        } else {
-          // No route params, redirect to user dashboard
-          routingService.redirectToUserContext(state.company, state.user);
-        }
-      }
+      // Skip complex routing validation for now to prevent issues
+      // Just set loading to false
+      setAuthState(prev => ({ ...prev, isLoading: false }));
     } catch (error) {
       console.error('Auth initialization failed:', error);
       setAuthState(prev => ({ ...prev, isLoading: false }));

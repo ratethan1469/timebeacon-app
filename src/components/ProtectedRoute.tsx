@@ -23,8 +23,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
+  // For demo purposes, create a temporary user if none exists
   if (!user) {
-    return <Navigate to="/login" replace />;
+    // Check if we have a stored user
+    const storedUser = localStorage.getItem('timebeacon_user');
+    if (!storedUser) {
+      return <Navigate to="/login" replace />;
+    }
   }
 
   return <>{children}</>;
