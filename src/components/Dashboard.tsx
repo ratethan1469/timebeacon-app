@@ -181,7 +181,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               className="source-dot"
               style={{ backgroundColor: '#4285F4' }}
             />
-            <span className="source-name">📅 Calendar Event</span>
+            <span className="source-name"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>Calendar Event</span>
           </div>
           <div className="entry-project">{event.title}</div>
           {event.description && (
@@ -190,7 +190,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           
           <div className="entry-meta">
             <div className="source-badge">
-              <span>📅</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
               <span>Google Calendar</span>
             </div>
             {event.attendees && event.attendees.length > 0 && (
@@ -200,7 +200,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             )}
             {event.location && (
               <span className="meeting-location">
-                📍 {event.location}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>{event.location}
               </span>
             )}
           </div>
@@ -212,7 +212,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             onClick={() => convertCalendarEventToTimeEntry(event)}
             title="Convert to time entry"
           >
-            ➕ Track Time
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>Track Time
           </button>
         </div>
       </div>
@@ -755,7 +755,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 disabled={!canSubmitWeek()}
                 title={canSubmitWeek() ? 'Submit all approved entries for manager review' : `You have ${getPendingEntriesCount()} pending entries. Please approve all entries before submitting.`}
               >
-                {canSubmitWeek() ? '📋 Submit Week for Review' : `⏳ ${getPendingEntriesCount()} Pending Entries`}
+                {canSubmitWeek() ? <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}><path d="M9 11l3 3 8-8"></path><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.18 0 2.3.23 3.32.64"></path></svg>Submit Week for Review</> : <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}><circle cx="12" cy="12" r="10"></circle><polyline points="12,6 12,12 16,14"></polyline></svg>{getPendingEntriesCount()} Pending Entries</>}
               </button>
               {!canSubmitWeek() && getPendingEntriesCount() > 0 && (
                 <div className="tooltip-warning" style={{
@@ -779,8 +779,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           ) : (
             <button className="btn btn-secondary" disabled>
-              {weekDates[0] > new Date().toISOString().split('T')[0] ? '📅 Future Week' : 
-               entries.filter(e => weekDates.includes(e.date) && e.status === 'submitted').length > 0 ? '📋 Submitted' : '✅ Past Week'}
+              {weekDates[0] > new Date().toISOString().split('T')[0] ? <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>Future Week</> : 
+               entries.filter(e => weekDates.includes(e.date) && e.status === 'submitted').length > 0 ? <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}><path d="M9 11l3 3 8-8"></path><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.18 0 2.3.23 3.32.64"></path></svg>Submitted</> : <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22,4 12,14.01 9,11.01"></polyline></svg>Past Week</>}
             </button>
           )}
         </div>
@@ -824,7 +824,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <span className="hours-badge">{formatHours(totalHours)}</span>
                   )}
                   {isFuture && totalHours === 0 && (
-                    <span className="future-indicator">📅</span>
+                    <span className="future-indicator"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
                   )}
                 </div>
               </div>
@@ -838,12 +838,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div className="no-entries">
                     {isFuture ? (
                       <>
-                        <span>📅</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                         <p>Upcoming - no meetings scheduled</p>
                       </>
                     ) : (
                       <>
-                        <span>🤖</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="m12 7-3 4 3 4 3-4-3-4z"></path><line x1="8" y1="14" x2="8" y2="16"></line><line x1="16" y1="14" x2="16" y2="16"></line></svg>
                         <p>No automated entries detected</p>
                       </>
                     )}
@@ -884,7 +884,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <div className="entry-meta">
                             {entry.automated && (
                               <div className="source-badge">
-                                <span>🤖</span>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="m12 7-3 4 3 4 3-4-3-4z"></path><line x1="8" y1="14" x2="8" y2="16"></line><line x1="16" y1="14" x2="16" y2="16"></line></svg>
                                 <span>{entry.source || 'Auto'}</span>
                               </div>
                             )}
@@ -914,14 +914,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             onClick={() => handleEditEntry(entry)}
                             title="Edit entry"
                           >
-                            ✏️
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
                           </button>
                           <button 
                             className="btn btn-small btn-secondary"
                             onClick={() => handleDuplicate(entry)}
                             title="Duplicate for recurring meetings"
                           >
-                            📋
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>
                           </button>
                           <button 
                             className="btn btn-small btn-danger"
@@ -931,7 +931,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               }
                             }}
                           >
-                            🗑️
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3,6 5,6 21,6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                           </button>
                         </div>
                       </div>
@@ -949,7 +949,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>✏️ Edit Time Entry</h3>
+              <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>Edit Time Entry</h3>
               <button 
                 className="modal-close"
                 onClick={() => setShowEditModal(false)}
@@ -1131,7 +1131,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="modal-overlay" onClick={closeAddEntryModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>⚡ Quick Time Entry</h3>
+              <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px', filter: 'drop-shadow(0 2px 4px rgba(99, 102, 241, 0.3))'}}><defs><linearGradient id="lightning-dashboard" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style={{stopColor:'#8b5cf6', stopOpacity:1}} /><stop offset="50%" style={{stopColor:'#6366f1', stopOpacity:1}} /><stop offset="100%" style={{stopColor:'#3b82f6', stopOpacity:1}} /></linearGradient></defs><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="url(#lightning-dashboard)" stroke="url(#lightning-dashboard)"></polygon></svg>Quick Time Entry</h3>
               <button 
                 className="modal-close"
                 onClick={closeAddEntryModal}
@@ -1296,7 +1296,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       checked={addEntryForm.createSeries || false}
                       onChange={(e) => setAddEntryForm({ ...addEntryForm, createSeries: e.target.checked })}
                     />
-                    🔄 Create recurring entries
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}><polyline points="23,4 23,10 17,10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>Create recurring entries
                   </label>
                   
                   {addEntryForm.createSeries && (
@@ -1366,7 +1366,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     color: 'var(--text-secondary)',
                     marginBottom: '12px'
                   }}>
-                    ⚙️ Additional Options
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>Additional Options
                   </summary>
                   <div style={{ padding: '12px', background: 'var(--background-secondary)', borderRadius: '8px' }}>
                     <div className="form-group">
@@ -1391,7 +1391,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-primary" style={{ fontSize: '16px', padding: '12px 24px' }}>
-                    ✨ Create Entry
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>Create Entry
                   </button>
                 </div>
               </form>

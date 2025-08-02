@@ -19,10 +19,10 @@ interface DatabaseSchema {
 }
 
 export class TimeBeaconDatabase {
-  private db: IDBDatabase | null = null;
-  private readonly dbName = 'TimeBeaconDB';
-  private readonly version = 1;
-  private readonly stores = ['timeEntries', 'projects', 'clients', 'settings', 'syncMetadata'];
+  protected db: IDBDatabase | null = null;
+  protected readonly dbName = 'TimeBeaconDB';
+  protected readonly version = 1;
+  protected readonly stores = ['timeEntries', 'projects', 'clients', 'settings', 'syncMetadata'];
 
   constructor() {
     this.init();
@@ -86,7 +86,7 @@ export class TimeBeaconDatabase {
   /**
    * Generic method to perform database operations
    */
-  private async performOperation<T>(
+  protected async performOperation<T>(
     storeName: string,
     operation: (store: IDBObjectStore) => IDBRequest,
     mode: IDBTransactionMode = 'readonly'

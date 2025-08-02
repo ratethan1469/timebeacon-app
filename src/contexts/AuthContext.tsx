@@ -1,16 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authService } from '../services/auth';
+import { routingService } from '../services/routing';
+import { AuthState, LoginRequest, User, Company } from '../types/auth';
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-}
-
-interface AuthContextType {
-  user: User | null;
+interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  isLoading: boolean;
+  checkPermission: (resource: string, action: string) => boolean;
+  currentRoute: { accountId?: string; visitorId?: string } | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,48 +21,113 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    company: null,
+    isAuthenticated: false,
+    isLoading: true,
+    permissions: [],
+  });
+  const [currentRoute, setCurrentRoute] = useState<{ accountId?: string; visitorId?: string } | null>(null);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('timebeacon_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
+    initializeAuth();
   }, []);
 
+  useEffect(() => {
+    // Update route params when URL changes
+    const params = routingService.extractRouteParams();
+    setCurrentRoute(params);
+  }, [window.location.pathname]);
+
+  const initializeAuth = () => {
+    try {
+      const state = authService.getAuthState();
+      setAuthState(state);
+
+      // If authenticated, validate current route
+      if (state.isAuthenticated && state.user && state.company) {
+        const params = routingService.extractRouteParams();
+        if (params) {
+          // Check if current URL matches user context
+          if (params.accountId !== state.company.accountId || params.visitorId !== state.user.visitorId) {
+            // Redirect to correct URL
+            routingService.redirectToUserContext(state.company, state.user);
+          }
+        } else {
+          // No route params, redirect to user dashboard
+          routingService.redirectToUserContext(state.company, state.user);
+        }
+      }
+    } catch (error) {
+      console.error('Auth initialization failed:', error);
+      setAuthState(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
   const login = async (email: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
+    setAuthState(prev => ({ ...prev, isLoading: true }));
     
-    // Simple mock authentication - replace with real API call
-    if (email && password) {
-      const mockUser: User = {
-        id: '1',
+    try {
+      // Extract route params for context
+      const routeParams = routingService.extractRouteParams();
+      
+      const loginRequest: LoginRequest = {
         email,
-        name: email.split('@')[0]
+        password,
+        accountId: routeParams?.accountId,
+        visitorId: routeParams?.visitorId,
+      };
+
+      const response = await authService.login(loginRequest);
+      
+      const newState: AuthState = {
+        user: response.user,
+        company: response.company,
+        isAuthenticated: true,
+        isLoading: false,
+        permissions: [...(response.user.permissions || [])],
       };
       
-      setUser(mockUser);
-      localStorage.setItem('timebeacon_user', JSON.stringify(mockUser));
-      setIsLoading(false);
+      setAuthState(newState);
+
+      // Redirect to user's dashboard with correct URL structure
+      routingService.redirectToUserContext(response.company, response.user);
+      
       return true;
+    } catch (error) {
+      console.error('Login failed:', error);
+      setAuthState(prev => ({ ...prev, isLoading: false }));
+      return false;
     }
-    
-    setIsLoading(false);
-    return false;
   };
 
   const logout = () => {
-    setUser(null);
-    localStorage.removeItem('timebeacon_user');
+    authService.logout();
+    setAuthState({
+      user: null,
+      company: null,
+      isAuthenticated: false,
+      isLoading: false,
+      permissions: [],
+    });
+    setCurrentRoute(null);
+    
+    // Redirect to login
+    window.location.href = '/login';
   };
 
-  const value = {
-    user,
+  const checkPermission = (resource: string, action: string): boolean => {
+    if (!authState.user) return false;
+    return authService.hasPermission(authState.permissions, resource, action, authState.user.id);
+  };
+
+  const value: AuthContextType = {
+    ...authState,
     login,
     logout,
-    isLoading
+    checkPermission,
+    currentRoute,
   };
 
   return (

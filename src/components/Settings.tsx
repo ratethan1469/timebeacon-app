@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Settings as SettingsType, Project } from '../types';
 import { MultiSelect } from './MultiSelect';
 import { projectTemplates, ProjectTemplate } from '../data/projectTemplates';
+import { PermissionsManager } from './PermissionsManager';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SettingsProps {
   settings: SettingsType;
@@ -20,6 +22,8 @@ export const Settings: React.FC<SettingsProps> = ({
   onUpdateProject,
   onDeleteProject,
 }) => {
+  const { checkPermission } = useAuth();
+  const [activeTab, setActiveTab] = useState<'general' | 'permissions'>('general');
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -130,7 +134,58 @@ export const Settings: React.FC<SettingsProps> = ({
         <p className="dashboard-subtitle">Configure your TimeBeacon preferences</p>
       </div>
 
-      <div style={{ display: 'grid', gap: '24px' }}>
+      {/* Tab Navigation */}
+      <div style={{ 
+        display: 'flex', 
+        borderBottom: '1px solid var(--gray-200)', 
+        marginBottom: '24px',
+        backgroundColor: 'white',
+        borderRadius: '8px 8px 0 0',
+        padding: '0 24px'
+      }}>
+        <button
+          onClick={() => setActiveTab('general')}
+          style={{
+            padding: '16px 24px',
+            border: 'none',
+            backgroundColor: 'transparent',
+            cursor: 'pointer',
+            borderBottom: activeTab === 'general' ? '3px solid var(--primary-color)' : '3px solid transparent',
+            color: activeTab === 'general' ? 'var(--primary-color)' : 'var(--gray-600)',
+            fontWeight: activeTab === 'general' ? '600' : '400',
+            fontSize: '16px'
+          }}
+        >
+          General Settings
+        </button>
+        
+        {checkPermission('users', 'read') && (
+          <button
+            onClick={() => setActiveTab('permissions')}
+            style={{
+              padding: '16px 24px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              cursor: 'pointer',
+              borderBottom: activeTab === 'permissions' ? '3px solid var(--primary-color)' : '3px solid transparent',
+              color: activeTab === 'permissions' ? 'var(--primary-color)' : 'var(--gray-600)',
+              fontWeight: activeTab === 'permissions' ? '600' : '400',
+              fontSize: '16px'
+            }}
+          >
+            Team & Permissions
+          </button>
+        )}
+      </div>
+
+      {/* Permissions Tab */}
+      {activeTab === 'permissions' && (
+        <PermissionsManager isVisible={true} />
+      )}
+
+      {/* General Settings Tab */}
+      {activeTab === 'general' && (
+        <div style={{ display: 'grid', gap: '24px' }}>
         {/* Profile Settings */}
         <div className="content-card">
           <div className="card-header">
@@ -448,7 +503,8 @@ export const Settings: React.FC<SettingsProps> = ({
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 };
