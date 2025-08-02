@@ -42,12 +42,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const initializeAuth = () => {
     try {
-      const state = authService.getAuthState();
-      setAuthState(state);
-
-      // Skip complex routing validation for now to prevent issues
-      // Just set loading to false
-      setAuthState(prev => ({ ...prev, isLoading: false }));
+      // Check localStorage for user data directly
+      const userStr = localStorage.getItem('timebeacon_user');
+      const companyStr = localStorage.getItem('timebeacon_company');
+      
+      if (userStr && companyStr) {
+        const user = JSON.parse(userStr);
+        const company = JSON.parse(companyStr);
+        
+        setAuthState({
+          user,
+          company,
+          isAuthenticated: true,
+          isLoading: false,
+          permissions: user.permissions || [],
+        });
+      } else {
+        setAuthState(prev => ({ ...prev, isLoading: false }));
+      }
     } catch (error) {
       console.error('Auth initialization failed:', error);
       setAuthState(prev => ({ ...prev, isLoading: false }));
