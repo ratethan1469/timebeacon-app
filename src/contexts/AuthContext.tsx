@@ -91,8 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setAuthState(newState);
 
-      // Redirect to user's dashboard with correct URL structure
-      routingService.redirectToUserContext(response.company, response.user);
+      // Don't redirect here, let the login component handle navigation
+      // routingService.redirectToUserContext(response.company, response.user);
       
       return true;
     } catch (error) {

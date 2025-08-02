@@ -18,11 +18,16 @@ const Login: React.FC = () => {
       return;
     }
 
-    const success = await login(email, password);
-    if (success) {
-      navigate('/dashboard');
-    } else {
-      setError('Invalid email or password');
+    try {
+      const success = await login(email, password);
+      if (success) {
+        navigate('/dashboard');
+      } else {
+        setError('Login failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('Login failed. Please try again.');
     }
   };
 

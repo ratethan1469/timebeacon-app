@@ -302,9 +302,10 @@ class AuthService {
   }
 
   /**
-   * Mock login for development
+   * Mock login for development - accepts any email/password
    */
   private mockLogin(request: LoginRequest): LoginResponse {
+    // Accept any email/password combination
     const mockUser: User = {
       id: crypto.randomUUID(),
       visitorId: request.visitorId || this.generateVisitorId(),
