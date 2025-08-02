@@ -27,6 +27,11 @@ class AuthService {
    * Login with email/password and optional company slug
    */
   async login(request: LoginRequest): Promise<LoginResponse> {
+    // For demo purposes, use mock authentication directly
+    // In production with real backend, remove this and uncomment the API calls below
+    return this.mockLogin(request);
+    
+    /* Uncomment when real backend is ready:
     try {
       const response = await fetch(`${this.API_BASE}/auth/login`, {
         method: 'POST',
@@ -60,12 +65,17 @@ class AuthService {
       
       throw error;
     }
+    */
   }
 
   /**
    * Sign up new company and owner user
    */
   async signup(request: SignupRequest): Promise<LoginResponse> {
+    // For demo purposes, use mock authentication directly
+    return this.mockSignup(request);
+    
+    /* Uncomment when real backend is ready:
     try {
       const response = await fetch(`${this.API_BASE}/auth/signup`, {
         method: 'POST',
@@ -99,6 +109,7 @@ class AuthService {
       
       throw error;
     }
+    */
   }
 
   /**
@@ -256,6 +267,10 @@ class AuthService {
    * Get team members (for managers)
    */
   async getTeamMembers(): Promise<User[]> {
+    // For demo purposes, return mock data directly
+    return this.mockTeamMembers();
+    
+    /* Uncomment when real backend is ready:
     const token = localStorage.getItem(this.TOKEN_KEY);
     if (!token) {
       throw new Error('Not authenticated');
@@ -283,6 +298,7 @@ class AuthService {
       
       throw error;
     }
+    */
   }
 
   /**
