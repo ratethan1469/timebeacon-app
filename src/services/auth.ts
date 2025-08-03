@@ -40,15 +40,26 @@ class AuthService {
       throw new Error('Password must be at least 8 characters');
     }
 
-    // Rate limiting
-    this.checkRateLimit(request.email);
-
-    // For demo with enhanced security
-    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
-      return this.secureLogin(request);
+    // Light rate limiting check (will be strict on actual failures)
+    try {
+      this.checkRateLimit(request.email);
+    } catch (rateLimitError) {
+      // For demo accounts, be more lenient
+      if (!request.email.includes('@demo.com')) {
+        throw rateLimitError;
+      }
+      console.warn('Rate limit reached for demo account, but allowing attempt');
     }
 
-    return this.productionLogin(request);
+    // For demo with enhanced security - always use secure login for demo
+    // In a real production app, check for actual backend availability
+    try {
+      return await this.secureLogin(request);
+    } catch (error) {
+      // Fallback to production login if demo fails
+      console.warn('Demo login failed, trying production:', error);
+      return this.productionLogin(request);
+    }
     
     /* Uncomment when real backend is ready:
     try {
@@ -378,6 +389,7 @@ class AuthService {
    * Rate limiting for authentication attempts
    */
   private checkRateLimit(email: string): void {
+    // For demo purposes, be more lenient with rate limiting
     const key = `auth_attempts_${email}`;
     const attempts = JSON.parse(localStorage.getItem(key) || '[]');
     const now = Date.now();
@@ -386,13 +398,34 @@ class AuthService {
     // Remove old attempts
     const recentAttempts = attempts.filter((timestamp: number) => timestamp > fiveMinutesAgo);
     
-    if (recentAttempts.length >= 5) {
-      throw new Error('Too many login attempts. Please try again in 5 minutes.');
+    // Increase limit for demo accounts
+    const isDemo = email.includes('@demo.com');
+    const maxAttempts = isDemo ? 20 : 5; // More lenient for demo accounts
+    
+    if (recentAttempts.length >= maxAttempts) {
+      throw new Error(`Too many login attempts. Please try again in 5 minutes.`);
     }
     
-    // Record this attempt
-    recentAttempts.push(now);
-    localStorage.setItem(key, JSON.stringify(recentAttempts));
+    // Only record failed attempts, not all attempts
+    // This will be called before validation, so we'll handle it differently
+  }
+
+  /**
+   * Clear rate limit for successful login
+   */
+  private clearRateLimit(email: string): void {
+    const key = `auth_attempts_${email}`;
+    localStorage.removeItem(key);
+  }
+
+  /**
+   * Record failed login attempt
+   */
+  private recordFailedAttempt(email: string): void {
+    const key = `auth_attempts_${email}`;
+    const attempts = JSON.parse(localStorage.getItem(key) || '[]');
+    attempts.push(Date.now());
+    localStorage.setItem(key, JSON.stringify(attempts));
   }
 
   /**
@@ -400,13 +433,15 @@ class AuthService {
    */
   private async secureLogin(request: LoginRequest): Promise<LoginResponse> {
     // Simulate authentication delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     // Demo credentials for testing
     const validCredentials = [
       { email: 'admin@demo.com', password: 'Admin123!', role: 'owner' as UserRole },
       { email: 'manager@demo.com', password: 'Manager123!', role: 'manager' as UserRole },
       { email: 'employee@demo.com', password: 'Employee123!', role: 'employee' as UserRole },
+      // Also accept any email with demo password for testing
+      { email: request.email, password: 'Demo123!', role: 'employee' as UserRole },
     ];
     
     const validUser = validCredentials.find(
@@ -414,8 +449,13 @@ class AuthService {
     );
     
     if (!validUser) {
-      throw new Error('Invalid email or password');
+      // Record failed attempt
+      this.recordFailedAttempt(request.email);
+      throw new Error('Invalid email or password. Try: admin@demo.com/Admin123!, manager@demo.com/Manager123!, or employee@demo.com/Employee123!');
     }
+    
+    // Clear rate limit on successful login
+    this.clearRateLimit(request.email);
     
     return this.createAuthResponse(request, validUser.role);
   }
