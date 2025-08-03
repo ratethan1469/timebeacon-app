@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import Login from './components/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AppContent } from './components/AppContent';
+import GoogleOAuthCallback from './components/GoogleOAuthCallback';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
             
             {/* Multi-tenant routes */}
             <Route path="/:accountId/:visitorId/dashboard" element={

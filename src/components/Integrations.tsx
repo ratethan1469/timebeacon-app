@@ -1,6 +1,7 @@
 import React from 'react';
 import { Integration } from '../types';
 import { GoogleCalendarAuth } from './GoogleCalendarAuth';
+import GoogleIntegrations from './GoogleIntegrations';
 
 interface IntegrationsProps {
   integrations: Integration[];
@@ -85,6 +86,9 @@ export const Integrations: React.FC<IntegrationsProps> = ({
           </p>
         </div>
       </div>
+
+      {/* Google Integrations Section */}
+      <GoogleIntegrations />
 
       <div className="content-card">
         <div className="card-header">
