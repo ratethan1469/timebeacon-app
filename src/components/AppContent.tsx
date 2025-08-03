@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Dashboard } from './Dashboard';
 import { Reports } from './Reports';
@@ -14,10 +15,36 @@ import { contentAnalyzer } from '../services/contentAnalyzer';
 import { aiService } from '../services/aiService';
 
 export function AppContent() {
-  const [activeItem, setActiveItem] = useState<NavigationItem>('dashboard');
+  const location = useLocation();
+  const navigate = useNavigate();
   const [aiEnabled, setAiEnabled] = useState(false);
   const [useEnhancedReports, setUseEnhancedReports] = useState(true);
   const timeTracker = useTimeTrackerSync();
+
+  // Determine active item from URL
+  const getActiveItemFromPath = (): NavigationItem => {
+    const path = location.pathname;
+    if (path.includes('/reports')) return 'reports';
+    if (path.includes('/ai-insights')) return 'ai-insights';
+    if (path.includes('/permissions')) return 'permissions';
+    if (path.includes('/settings')) return 'settings';
+    if (path.includes('/privacy')) return 'privacy';
+    if (path.includes('/integrations')) return 'integrations';
+    return 'dashboard';
+  };
+
+  const [activeItem, setActiveItem] = useState<NavigationItem>(getActiveItemFromPath());
+
+  // Update active item when URL changes
+  useEffect(() => {
+    setActiveItem(getActiveItemFromPath());
+  }, [location.pathname]);
+
+  // Handle navigation
+  const handleNavigation = (item: NavigationItem) => {
+    navigate(`/${item}`);
+    setActiveItem(item);
+  };
 
   // Handle AI toggle
   const handleToggleAI = () => {
@@ -223,7 +250,7 @@ export function AppContent() {
 
   return (
     <div className="app-container">
-      <Sidebar activeItem={activeItem} onItemClick={setActiveItem} />
+      <Sidebar activeItem={activeItem} onItemClick={handleNavigation} />
       <main className="main-content" data-testid="main-content">
         {renderContent()}
       </main>

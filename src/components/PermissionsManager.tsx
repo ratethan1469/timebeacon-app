@@ -296,7 +296,7 @@ const PermissionsManager: React.FC = () => {
     return (
       <div className="permissions-manager">
         <div className="access-denied">
-          <h2>🔒 Access Denied</h2>
+          <h2>Access Denied</h2>
           <p>You don't have permission to manage user roles and permissions.</p>
         </div>
       </div>
@@ -315,7 +315,7 @@ const PermissionsManager: React.FC = () => {
   return (
     <div className="permissions-manager">
       <div className="permissions-header">
-        <h1>👥 Permissions & Team Management</h1>
+        <h1>Permissions & Team Management</h1>
         <p>Manage user roles, permissions, and team assignments</p>
       </div>
 
@@ -325,27 +325,27 @@ const PermissionsManager: React.FC = () => {
           className={`tab ${activeTab === 'roles' ? 'active' : ''}`}
           onClick={() => setActiveTab('roles')}
         >
-          🎭 Roles & Users
+          Roles & Users
         </button>
         <button 
           className={`tab ${activeTab === 'permissions' ? 'active' : ''}`}
           onClick={() => setActiveTab('permissions')}
         >
-          🔐 Permissions
+          Permissions
         </button>
         {canManageTeams && (
           <button 
             className={`tab ${activeTab === 'teams' ? 'active' : ''}`}
             onClick={() => setActiveTab('teams')}
           >
-            👥 Team Management
+            Team Management
           </button>
         )}
         <button 
           className={`tab ${activeTab === 'audit' ? 'active' : ''}`}
           onClick={() => setActiveTab('audit')}
         >
-          📋 Audit Log
+          Audit Log
         </button>
       </div>
 
@@ -356,7 +356,7 @@ const PermissionsManager: React.FC = () => {
           
           {/* Role Hierarchy Info */}
           <div className="role-hierarchy">
-            <h3>📊 Role Hierarchy</h3>
+            <h3>Role Hierarchy</h3>
             <div className="role-cards">
               {Object.entries(ROLE_HIERARCHY)
                 .sort(([,a], [,b]) => b.level - a.level)
@@ -375,7 +375,7 @@ const PermissionsManager: React.FC = () => {
 
           {/* Users List */}
           <div className="users-list">
-            <h3>👤 Manage Users</h3>
+            <h3>Manage Users</h3>
             <div className="users-table">
               <table>
                 <thead>
@@ -503,7 +503,7 @@ const PermissionsManager: React.FC = () => {
           <h2>Team Assignments</h2>
           
           <div className="team-structure">
-            <h3>🏢 Organizational Structure</h3>
+            <h3>Organizational Structure</h3>
             <div className="org-chart">
               {users.filter(u => u.role === 'manager' || u.role === 'admin' || u.role === 'owner').map(manager => (
                 <div key={manager.id} className="manager-group">
@@ -528,7 +528,7 @@ const PermissionsManager: React.FC = () => {
           </div>
 
           <div className="team-assignments">
-            <h3>📋 Team Assignments</h3>
+            <h3>Team Assignments</h3>
             <table>
               <thead>
                 <tr>
@@ -574,7 +574,6 @@ const PermissionsManager: React.FC = () => {
               <div key={log.id} className="audit-entry">
                 <div className="audit-header">
                   <span className={`audit-action ${log.action}`}>
-                    {log.action === 'granted' ? '✅' : log.action === 'revoked' ? '❌' : '✏️'}
                     {log.action.charAt(0).toUpperCase() + log.action.slice(1)}
                   </span>
                   <span className="audit-timestamp">

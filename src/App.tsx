@@ -29,14 +29,59 @@ function App() {
                 <AppContent />
               </ProtectedRoute>
             } />
+            <Route path="/:accountId/:visitorId/permissions" element={
+              <ProtectedRoute>
+                <AppContent />
+              </ProtectedRoute>
+            } />
             <Route path="/:accountId/:visitorId/settings" element={
               <ProtectedRoute>
                 <AppContent />
               </ProtectedRoute>
             } />
+            <Route path="/:accountId/:visitorId/privacy" element={
+              <ProtectedRoute>
+                <AppContent />
+              </ProtectedRoute>
+            } />
+            <Route path="/:accountId/:visitorId/integrations" element={
+              <ProtectedRoute>
+                <AppContent />
+              </ProtectedRoute>
+            } />
             
-            {/* Legacy routes for backward compatibility */}
+            {/* Direct routes */}
             <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <AppContent />
+              </ProtectedRoute>
+            } />
+            <Route path="/reports" element={
+              <ProtectedRoute>
+                <AppContent />
+              </ProtectedRoute>
+            } />
+            <Route path="/ai-insights" element={
+              <ProtectedRoute>
+                <AppContent />
+              </ProtectedRoute>
+            } />
+            <Route path="/permissions" element={
+              <ProtectedRoute>
+                <AppContent />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <AppContent />
+              </ProtectedRoute>
+            } />
+            <Route path="/privacy" element={
+              <ProtectedRoute>
+                <AppContent />
+              </ProtectedRoute>
+            } />
+            <Route path="/integrations" element={
               <ProtectedRoute>
                 <AppContent />
               </ProtectedRoute>

@@ -315,14 +315,14 @@ const EnhancedReports: React.FC = () => {
   return (
     <div className="enhanced-reports">
       <div className="reports-header">
-        <h1>📊 Enhanced Reports</h1>
+        <h1>Analytics & Reports</h1>
         <p>Comprehensive analytics and insights for your time tracking data</p>
       </div>
 
       {/* Filters Section */}
       <div className="reports-filters">
         <div className="filter-section">
-          <h3>📅 Date Range</h3>
+          <h3>Date Range</h3>
           <div className="date-presets">
             {(['today', 'week', 'month', 'quarter', 'year'] as const).map(preset => (
               <button
@@ -359,7 +359,7 @@ const EnhancedReports: React.FC = () => {
         {/* Team Member Filter (Managers Only) */}
         {canViewTeamReports && teamMembers.length > 0 && (
           <div className="filter-section">
-            <h3>👥 Team Members</h3>
+            <h3>Team Members</h3>
             <div className="team-member-filters">
               <button
                 className={`filter-button ${filters.selectedTeamMembers.length === 0 ? 'active' : ''}`}
@@ -389,7 +389,7 @@ const EnhancedReports: React.FC = () => {
 
         {/* Project Filter */}
         <div className="filter-section">
-          <h3>📋 Projects</h3>
+          <h3>Projects</h3>
           <div className="project-filters">
             <button
               className={`filter-button ${filters.selectedProjects.length === 0 ? 'active' : ''}`}
@@ -418,15 +418,15 @@ const EnhancedReports: React.FC = () => {
 
         {/* Export Controls */}
         <div className="filter-section">
-          <h3>📤 Export Reports</h3>
+          <h3>Export Reports</h3>
           <div className="export-controls">
             <select
               value={exportFormat}
               onChange={(e) => setExportFormat(e.target.value as 'pdf' | 'excel' | 'png')}
             >
-              <option value="pdf">📄 PDF Report</option>
-              <option value="excel">📊 Excel Spreadsheet</option>
-              <option value="png">🖼️ Chart Images</option>
+              <option value="pdf">PDF Report</option>
+              <option value="excel">Excel Spreadsheet</option>
+              <option value="png">Chart Images</option>
             </select>
             
             <button
@@ -434,7 +434,7 @@ const EnhancedReports: React.FC = () => {
               onClick={() => exportReport(exportFormat)}
               disabled={isExporting}
             >
-              {isExporting ? '⏳ Exporting...' : '📥 Export'}
+              {isExporting ? 'Exporting...' : 'Export'}
             </button>
           </div>
         </div>
@@ -443,7 +443,7 @@ const EnhancedReports: React.FC = () => {
       {/* Summary Cards */}
       <div className="summary-cards">
         <div className="summary-card">
-          <h3>⏰ Total Hours</h3>
+          <h3>Total Hours</h3>
           <div className="metric-value">{reportMetrics.totalHours.toFixed(1)}h</div>
           <div className="metric-subtitle">
             {reportMetrics.billableHours.toFixed(1)}h billable
@@ -451,16 +451,16 @@ const EnhancedReports: React.FC = () => {
         </div>
         
         <div className="summary-card">
-          <h3>📈 Utilization</h3>
+          <h3>Utilization</h3>
           <div className="metric-value">{reportMetrics.utilizationRate.toFixed(1)}%</div>
           <div className="metric-subtitle">
-            {reportMetrics.utilizationRate >= 75 ? '🟢 Excellent' : 
-             reportMetrics.utilizationRate >= 50 ? '🟡 Good' : '🔴 Needs Improvement'}
+            {reportMetrics.utilizationRate >= 75 ? 'Excellent' : 
+             reportMetrics.utilizationRate >= 50 ? 'Good' : 'Needs Improvement'}
           </div>
         </div>
         
         <div className="summary-card">
-          <h3>⚡ Productivity</h3>
+          <h3>Productivity</h3>
           <div className="metric-value">{reportMetrics.productivityScore.toFixed(1)}%</div>
           <div className="metric-subtitle">
             {reportMetrics.totalSessions} sessions tracked
@@ -468,7 +468,7 @@ const EnhancedReports: React.FC = () => {
         </div>
         
         <div className="summary-card">
-          <h3>🎯 Top Project</h3>
+          <h3>Top Project</h3>
           <div className="metric-value">
             {reportMetrics.topProjects[0]?.name || 'No data'}
           </div>
@@ -492,7 +492,7 @@ const EnhancedReports: React.FC = () => {
 
       {/* Data Table */}
       <div className="data-table-section">
-        <h3>📋 Detailed Time Entries</h3>
+        <h3>Detailed Time Entries</h3>
         <div className="table-container">
           <table className="data-table">
             <thead>
@@ -515,7 +515,7 @@ const EnhancedReports: React.FC = () => {
                   <td>{((entry.duration || 0) / 60).toFixed(1)}h</td>
                   <td>
                     <span className={`status-badge ${entry.billable ? 'billable' : 'non-billable'}`}>
-                      {entry.billable ? '💰 Billable' : '📝 Non-billable'}
+                      {entry.billable ? 'Billable' : 'Non-billable'}
                     </span>
                   </td>
                   {canViewTeamReports && (

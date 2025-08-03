@@ -10,11 +10,31 @@ interface SidebarProps {
 
 const getNavigationItems = (userRole?: string) => {
   const baseItems = [
-    { id: 'dashboard' as NavigationItem, label: 'Dashboard', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg> },
-    { id: 'reports' as NavigationItem, label: 'Reports', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22,6 13,15 8.5,10.5 2,17"></polyline><polyline points="16,6 22,6 22,12"></polyline></svg> },
-    { id: 'ai-insights' as NavigationItem, label: 'AI Insights', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="10" x="3" y="11" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="m12 7-3 4 3 4 3-4-3-4z"></path><line x1="8" y1="14" x2="8" y2="16"></line><line x1="16" y1="14" x2="16" y2="16"></line></svg> },
-    { id: 'privacy' as NavigationItem, label: 'Privacy & Data', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> },
-    { id: 'integrations' as NavigationItem, label: 'Integrations', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg> },
+    { 
+      id: 'dashboard' as NavigationItem, 
+      label: 'Dashboard', 
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+    },
+    { 
+      id: 'reports' as NavigationItem, 
+      label: 'Analytics & Reports', 
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>
+    },
+    { 
+      id: 'ai-insights' as NavigationItem, 
+      label: 'AI Insights', 
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4"></path><path d="M21 12c.5 0 .9-.4.9-.9V6.1c0-.5-.4-.9-.9-.9H17"></path><path d="M3 12c-.5 0-.9-.4-.9-.9V6.1c0-.5.4-.9.9-.9H7"></path><path d="M12 3c0-.5.4-.9.9-.9h4.9c.5 0 .9.4.9.9V7"></path><path d="M12 21c0 .5-.4.9-.9.9H6.1c-.5 0-.9-.4-.9-.9V17"></path></svg>
+    },
+    { 
+      id: 'privacy' as NavigationItem, 
+      label: 'Privacy & Data', 
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>
+    },
+    { 
+      id: 'integrations' as NavigationItem, 
+      label: 'Integrations', 
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+    },
   ];
 
   // Add permissions menu for managers and above
@@ -23,7 +43,7 @@ const getNavigationItems = (userRole?: string) => {
     managementItems.push({
       id: 'permissions' as NavigationItem, 
       label: 'Team & Permissions', 
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path><line x1="15" y1="11" x2="21" y2="5"></line><circle cx="18" cy="8" r="3"></circle></svg>
     });
   }
 
