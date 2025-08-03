@@ -1,162 +1,417 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Integration } from '../types';
-import GoogleIntegrations from './GoogleIntegrations';
 
 interface IntegrationsProps {
   integrations: Integration[];
   onToggleIntegration: (integrationId: string) => void;
 }
 
-const integrationDetails = {
-  'google-calendar': {
-    name: 'Google Calendar',
-    description: 'Automatically create time entries from calendar meetings',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
-    ),
-    color: '#4285F4',
-    category: 'Calendar & Scheduling'
-  },
-  'slack': {
-    name: 'Slack',
-    description: 'Track time spent in client channels and DMs',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-      </svg>
-    ),
-    color: '#4A154B',
-    category: 'Communication'
-  },
-  'zoom': {
-    name: 'Zoom',
-    description: 'Auto-track meeting duration and participants',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-      </svg>
-    ),
-    color: '#2D8CFF',
-    category: 'Video Conferencing'
-  },
-  'teams': {
-    name: 'Microsoft Teams',
-    description: 'Track meetings and collaboration time',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-      </svg>
-    ),
-    color: '#6264A7',
-    category: 'Video Conferencing'
-  },
-  'gmail': {
-    name: 'Gmail',
-    description: 'Track time spent on client email threads',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-      </svg>
-    ),
-    color: '#EA4335',
-    category: 'Communication'
-  },
-  'jira': {
-    name: 'Jira',
-    description: 'Auto-create entries from ticket work',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-      </svg>
-    ),
-    color: '#0052CC',
-    category: 'Project Management'
-  },
-  'salesforce': {
-    name: 'Salesforce',
-    description: 'Track customer interactions and opportunities',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-      </svg>
-    ),
-    color: '#00A1E0',
-    category: 'CRM & Sales'
-  }
-};
+interface IntegrationConfig {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  category: string;
+  status: 'available' | 'connected' | 'error' | 'coming-soon';
+  features: string[];
+  setupSteps?: string[];
+}
 
-export const Integrations: React.FC<IntegrationsProps> = ({ 
-  integrations, 
-  onToggleIntegration 
-}) => {
-  const formatLastSync = (lastSync?: string) => {
-    if (!lastSync) return 'Never synced';
-    const date = new Date(lastSync);
-    const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    return date.toLocaleDateString();
+const availableIntegrations: IntegrationConfig[] = [
+  {
+    id: 'google-calendar',
+    name: 'Google Calendar',
+    description: 'Automatically create time entries from calendar meetings and events',
+    icon: '📅',
+    color: '#4285F4',
+    category: 'Calendar & Scheduling',
+    status: 'available',
+    features: [
+      'Auto-import meetings as time entries',
+      'Detect meeting participants and duration', 
+      'Categorize by meeting type',
+      'Sync calendar blocks as work time'
+    ],
+    setupSteps: [
+      'Click "Connect Google Calendar" below',
+      'Sign in to your Google account',
+      'Grant calendar read permissions',
+      'Configure automatic import settings'
+    ]
+  },
+  {
+    id: 'slack',
+    name: 'Slack',
+    description: 'Track time spent in client channels, DMs, and meetings',
+    icon: '💬',
+    color: '#4A154B',
+    category: 'Communication',
+    status: 'coming-soon',
+    features: [
+      'Track time in client channels',
+      'Detect client vs internal conversations',
+      'Log meeting time from Slack calls',
+      'Auto-categorize by workspace'
+    ]
+  },
+  {
+    id: 'zoom',
+    name: 'Zoom',
+    description: 'Auto-track meeting duration, participants, and context',
+    icon: '🎥',
+    color: '#2D8CFF',
+    category: 'Video Conferencing',
+    status: 'coming-soon',
+    features: [
+      'Automatic meeting time tracking',
+      'Participant detection',
+      'Meeting recording integration',
+      'Client vs internal meeting classification'
+    ]
+  },
+  {
+    id: 'teams',
+    name: 'Microsoft Teams',
+    description: 'Track meetings, calls, and collaboration time in Teams',
+    icon: '🟦',
+    color: '#6264A7',
+    category: 'Video Conferencing',
+    status: 'coming-soon',
+    features: [
+      'Meeting and call tracking',
+      'Channel activity monitoring',
+      'Integration with Office 365',
+      'Team collaboration time logging'
+    ]
+  },
+  {
+    id: 'github',
+    name: 'GitHub',
+    description: 'Track development time based on commits, PRs, and issues',
+    icon: '⚫',
+    color: '#24292e',
+    category: 'Development',
+    status: 'coming-soon',
+    features: [
+      'Commit-based time tracking',
+      'Pull request review time',
+      'Issue resolution tracking',
+      'Repository activity monitoring'
+    ]
+  },
+  {
+    id: 'jira',
+    name: 'Jira',  
+    description: 'Sync project tasks and track time against tickets',
+    icon: '🔷',
+    color: '#0052CC',
+    category: 'Project Management',
+    status: 'coming-soon',
+    features: [
+      'Ticket-based time tracking',
+      'Project synchronization',
+      'Sprint time analysis',
+      'Automatic time logging from activity'
+    ]
+  },
+  {
+    id: 'asana',
+    name: 'Asana',
+    description: 'Connect tasks and projects for seamless time tracking',
+    icon: '🔶',
+    color: '#F06A6A',
+    category: 'Project Management', 
+    status: 'coming-soon',
+    features: [
+      'Task-based time entries',
+      'Project milestone tracking',
+      'Team collaboration insights',
+      'Automatic time allocation'
+    ]
+  },
+  {
+    id: 'notion',
+    name: 'Notion',
+    description: 'Track time spent on documents, projects, and databases',
+    icon: '📝',
+    color: '#000000',
+    category: 'Productivity',
+    status: 'coming-soon',
+    features: [
+      'Document editing time tracking',
+      'Database activity monitoring',
+      'Project page time logging',
+      'Collaboration time insights'
+    ]
+  }
+];
+
+export const Integrations: React.FC<IntegrationsProps> = ({ integrations, onToggleIntegration }) => {
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [showSetupModal, setShowSetupModal] = useState<string | null>(null);
+
+  const categories = ['all', ...Array.from(new Set(availableIntegrations.map(i => i.category)))];
+
+  const filteredIntegrations = selectedCategory === 'all' 
+    ? availableIntegrations 
+    : availableIntegrations.filter(i => i.category === selectedCategory);
+
+  const getStatusBadge = (status: IntegrationConfig['status']) => {
+    switch (status) {
+      case 'connected':
+        return <span className="status-badge connected">✅ Connected</span>;
+      case 'error':
+        return <span className="status-badge error">❌ Error</span>;
+      case 'available':
+        return <span className="status-badge available">🔗 Available</span>;
+      case 'coming-soon':
+        return <span className="status-badge coming-soon">🚧 Coming Soon</span>;
+      default:
+        return null;
+    }
+  };
+
+  const handleConnect = (integrationId: string) => {
+    if (integrationId === 'google-calendar') {
+      // For demo purposes, we'll show a setup modal instead of trying OAuth
+      setShowSetupModal(integrationId);
+    } else {
+      // For other integrations, show coming soon
+      alert('This integration is coming soon! We\'ll notify you when it\'s available.');
+    }
+  };
+
+  const handleGoogleCalendarSetup = () => {
+    // In a real implementation, this would handle the OAuth flow
+    alert('Google Calendar integration would be set up here. For demo purposes, this feature is not fully implemented.');
+    setShowSetupModal(null);
   };
 
   return (
-    <div>
+    <div className="integrations-page">
       <div className="dashboard-header">
         <div>
           <h1 className="dashboard-title">Integrations</h1>
           <p className="dashboard-subtitle">
-            Connect your tools to automate time tracking
+            Connect your favorite tools to automatically track time and enhance productivity
           </p>
+        </div>
+        <div className="integration-stats">
+          <div className="stat-item">
+            <span className="stat-value">{availableIntegrations.filter(i => i.status === 'connected').length}</span>
+            <span className="stat-label">Connected</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-value">{availableIntegrations.filter(i => i.status === 'available').length}</span>
+            <span className="stat-label">Available</span>
+          </div>
         </div>
       </div>
 
-      {/* Google Integrations Section */}
-      <GoogleIntegrations />
+      {/* Category Filter */}
+      <div className="category-filter">
+        {categories.map(category => (
+          <button
+            key={category}
+            className={`category-btn ${selectedCategory === category ? 'active' : ''}`}
+            onClick={() => setSelectedCategory(category)}
+          >
+            {category === 'all' ? '🌟 All' : category}
+          </button>
+        ))}
+      </div>
 
-      <div className="content-card" style={{ marginTop: '24px' }}>
-        <div className="card-header">
-          <h2 className="card-title">How It Works</h2>
-        </div>
-        <div style={{ padding: '24px' }}>
-          <div className="info-grid">
-            <div className="info-item">
-              <div className="info-icon">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
+      {/* Featured Integration */}
+      {selectedCategory === 'all' && (
+        <div className="featured-integration">
+          <div className="featured-content">
+            <div className="featured-text">
+              <h2>🎯 Most Popular: Google Calendar</h2>
+              <p>
+                Automatically convert your calendar meetings into time entries. 
+                Perfect for consultants and service providers who spend time in client meetings.
+              </p>
+              <div className="featured-benefits">
+                <div className="benefit-item">
+                  <div className="benefit-icon">⚡</div>
+                  <div>Save 15+ minutes daily on manual time entry</div>
+                </div>
+                <div className="benefit-item">
+                  <div className="benefit-icon">🎯</div>
+                  <div>Never miss billable meeting time again</div>
+                </div>
+                <div className="benefit-item">
+                  <div className="benefit-icon">📊</div>
+                  <div>Better utilization tracking and reporting</div>
+                </div>
               </div>
-              <div>
-                <h3>Automatic Detection</h3>
-                <p>TimeBeacon monitors your connected tools and automatically detects billable activities.</p>
-              </div>
+              <button 
+                className="btn btn-primary btn-large"
+                onClick={() => handleConnect('google-calendar')}
+              >
+                📅 Connect Google Calendar
+              </button>
             </div>
-            <div className="info-item">
-              <div className="info-icon">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </div>
-              <div>
-                <h3>Review & Edit</h3>
-                <p>All automatically created entries can be reviewed, edited, or deleted before submission.</p>
-              </div>
-            </div>
-            <div className="info-item">
-              <div className="info-icon">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <div>
-                <h3>Intelligent Categorization</h3>
-                <p>We automatically categorize time entries based on context and participants.</p>
+            <div className="featured-visual">
+              <div className="integration-preview">
+                <div className="preview-item">
+                  <div className="preview-icon">📅</div>
+                  <div className="preview-text">
+                    <div className="preview-title">Client Strategy Meeting</div>
+                    <div className="preview-time">2:00 PM - 3:30 PM</div>
+                  </div>
+                  <div className="preview-arrow">→</div>
+                  <div className="preview-entry">
+                    <div className="entry-badge">⏱️ 1.5h</div>
+                    <div className="entry-label">Auto-tracked</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Integrations Grid */}
+      <div className="integrations-grid">
+        {filteredIntegrations.map(integration => (
+          <div key={integration.id} className="integration-card">
+            <div className="integration-header">
+              <div className="integration-icon" style={{ backgroundColor: integration.color + '20' }}>
+                {integration.icon}
+              </div>
+              <div className="integration-info">
+                <h3 className="integration-name">{integration.name}</h3>
+                <p className="integration-category">{integration.category}</p>
+              </div>
+              {getStatusBadge(integration.status)}
+            </div>
+            
+            <p className="integration-description">{integration.description}</p>
+            
+            <div className="integration-features">
+              <h4>Features:</h4>
+              <ul>
+                {integration.features.map((feature, index) => (
+                  <li key={index}>{feature}</li>
+                ))}
+              </ul>
+            </div>
+            
+            <div className="integration-actions">
+              {integration.status === 'available' && (
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => handleConnect(integration.id)}
+                >
+                  Connect {integration.name}
+                </button>
+              )}
+              {integration.status === 'connected' && (
+                <div className="connected-actions">
+                  <button className="btn btn-secondary">Configure</button>
+                  <button className="btn btn-outline">Disconnect</button>
+                </div>
+              )}
+              {integration.status === 'coming-soon' && (
+                <button className="btn btn-secondary" disabled>
+                  Coming Soon
+                </button>
+              )}
+              {integration.status === 'error' && (
+                <button className="btn btn-warning">
+                  Reconnect
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Setup Modal */}
+      {showSetupModal && (
+        <div className="modal-overlay" onClick={() => setShowSetupModal(null)}>
+          <div className="modal-content setup-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🔗 Connect Google Calendar</h3>
+              <button 
+                className="modal-close"
+                onClick={() => setShowSetupModal(null)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="setup-steps">
+                <h4>Setup Steps:</h4>
+                <ol>
+                  <li>Click "Authorize Access" below to open Google's authentication</li>
+                  <li>Sign in to your Google account</li>
+                  <li>Grant TimeBeacon permission to read your calendar</li>
+                  <li>Configure which calendars to sync</li>
+                  <li>Set automatic import preferences</li>
+                </ol>
+              </div>
+              
+              <div className="setup-security">
+                <h4>🔒 Privacy & Security:</h4>
+                <ul>
+                  <li>✅ We only read calendar event titles, times, and attendees</li>
+                  <li>✅ We never access email or other Google services</li>
+                  <li>✅ You can disconnect at any time</li>
+                  <li>✅ All data stays within your TimeBeacon account</li>
+                </ul>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="btn btn-secondary"
+                onClick={() => setShowSetupModal(null)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={handleGoogleCalendarSetup}
+              >
+                🔐 Authorize Access
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Help Section */}
+      <div className="help-section">
+        <div className="help-card">
+          <h3>💡 Need Help?</h3>
+          <p>Setting up integrations is easy, but if you need assistance:</p>
+          <div className="help-actions">
+            <button className="btn btn-outline">📖 View Setup Guides</button>
+            <button className="btn btn-outline">💬 Contact Support</button>
+            <button className="btn btn-outline">🎥 Watch Tutorials</button>
+          </div>
+        </div>
+        
+        <div className="help-card">
+          <h3>🚀 Coming Soon</h3>
+          <p>We're working on more integrations based on user feedback:</p>
+          <div className="roadmap-items">
+            <div className="roadmap-item">
+              <span className="roadmap-icon">🔜</span>
+              <span>Slack & Microsoft Teams</span>
+            </div>
+            <div className="roadmap-item">
+              <span className="roadmap-icon">🔜</span>
+              <span>GitHub & GitLab</span>
+            </div>
+            <div className="roadmap-item">
+              <span className="roadmap-icon">🔜</span>
+              <span>Jira & Linear</span>
+            </div>
+          </div>
+          <button className="btn btn-outline">📝 Request Integration</button>
         </div>
       </div>
     </div>
