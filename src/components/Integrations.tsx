@@ -1,6 +1,5 @@
 import React from 'react';
 import { Integration } from '../types';
-import { GoogleCalendarAuth } from './GoogleCalendarAuth';
 import GoogleIntegrations from './GoogleIntegrations';
 
 interface IntegrationsProps {
@@ -12,49 +11,77 @@ const integrationDetails = {
   'google-calendar': {
     name: 'Google Calendar',
     description: 'Automatically create time entries from calendar meetings',
-    icon: '📅',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    ),
     color: '#4285F4',
     category: 'Calendar & Scheduling'
   },
   'slack': {
     name: 'Slack',
     description: 'Track time spent in client channels and DMs',
-    icon: '💬',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      </svg>
+    ),
     color: '#4A154B',
     category: 'Communication'
   },
   'zoom': {
     name: 'Zoom',
     description: 'Auto-track meeting duration and participants',
-    icon: '📹',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+      </svg>
+    ),
     color: '#2D8CFF',
     category: 'Video Conferencing'
   },
   'teams': {
     name: 'Microsoft Teams',
     description: 'Track meetings and collaboration time',
-    icon: '👥',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
     color: '#6264A7',
     category: 'Video Conferencing'
   },
   'gmail': {
     name: 'Gmail',
     description: 'Track time spent on client email threads',
-    icon: '📧',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      </svg>
+    ),
     color: '#EA4335',
     category: 'Communication'
   },
   'jira': {
     name: 'Jira',
     description: 'Auto-create entries from ticket work',
-    icon: '🎯',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+    ),
     color: '#0052CC',
     category: 'Project Management'
   },
   'salesforce': {
     name: 'Salesforce',
     description: 'Track customer interactions and opportunities',
-    icon: '☁️',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+      </svg>
+    ),
     color: '#00A1E0',
     category: 'CRM & Sales'
   }
@@ -106,12 +133,12 @@ export const Integrations: React.FC<IntegrationsProps> = ({
                   <div className="integration-header">
                     <div className="integration-info">
                       <div className="integration-icon-name">
-                        <span 
+                        <div 
                           className="integration-icon"
                           style={{ color: details.color }}
                         >
                           {details.icon}
-                        </span>
+                        </div>
                         <div>
                           <h3 className="integration-name">{details.name}</h3>
                           <p className="integration-description">{details.description}</p>
@@ -185,19 +212,6 @@ export const Integrations: React.FC<IntegrationsProps> = ({
                     </div>
                   )}
 
-                  {/* Google Calendar specific authentication */}
-                  {integration.name === 'google-calendar' && integration.enabled && (
-                    <div style={{ marginTop: '16px', padding: '16px', background: 'var(--background-secondary)', borderRadius: '8px' }}>
-                      <GoogleCalendarAuth 
-                        onAuthSuccess={() => {
-                          console.log('Google Calendar authenticated successfully');
-                        }}
-                        onAuthError={(error) => {
-                          console.error('Google Calendar auth error:', error);
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -212,21 +226,33 @@ export const Integrations: React.FC<IntegrationsProps> = ({
         <div style={{ padding: '24px' }}>
           <div className="info-grid">
             <div className="info-item">
-              <span className="info-icon">🤖</span>
+              <div className="info-icon">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              </div>
               <div>
                 <h3>Automatic Detection</h3>
                 <p>TimeBeacon monitors your connected tools and automatically detects billable activities.</p>
               </div>
             </div>
             <div className="info-item">
-              <span className="info-icon">✏️</span>
+              <div className="info-icon">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </div>
               <div>
                 <h3>Review & Edit</h3>
                 <p>All automatically created entries can be reviewed, edited, or deleted before submission.</p>
               </div>
             </div>
             <div className="info-item">
-              <span className="info-icon">📊</span>
+              <div className="info-icon">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
               <div>
                 <h3>Intelligent Categorization</h3>
                 <p>We automatically categorize time entries based on context and participants.</p>

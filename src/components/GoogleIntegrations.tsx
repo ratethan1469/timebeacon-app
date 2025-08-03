@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { googleIntegrationsService, GoogleAccount, GoogleActivity } from '../services/googleIntegrations';
+import { activitySyncService, PendingEntry } from '../services/activitySync';
 
 interface IntegrationStatus {
   gmail: boolean;
@@ -18,6 +19,8 @@ export default function GoogleIntegrations() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [activities, setActivities] = useState<GoogleActivity[]>([]);
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+  const [pendingEntries, setPendingEntries] = useState<PendingEntry[]>([]);
+  const [syncEnabled, setSyncEnabled] = useState(false);
   const [enabledServices, setEnabledServices] = useState<IntegrationStatus>({
     gmail: true,
     calendar: true,
@@ -30,8 +33,18 @@ export default function GoogleIntegrations() {
     const storedAccount = googleIntegrationsService.getStoredAccount();
     setAccount(storedAccount);
     
+    // Load sync settings
+    const syncSettings = activitySyncService.getSyncSettings();
+    setSyncEnabled(syncSettings.enabled);
+    
     if (storedAccount) {
       loadRecentActivities();
+      loadPendingEntries();
+      
+      // Start auto sync if enabled
+      if (syncSettings.enabled) {
+        activitySyncService.startAutoSync();
+      }
     }
   }, []);
 
@@ -69,6 +82,47 @@ export default function GoogleIntegrations() {
     }
   };
 
+  const loadPendingEntries = () => {
+    const pending = activitySyncService.getPendingEntries();
+    setPendingEntries(pending);
+  };
+
+  const handleSyncToggle = (enabled: boolean) => {
+    setSyncEnabled(enabled);
+    activitySyncService.updateSyncSettings({ enabled });
+    
+    if (enabled) {
+      activitySyncService.startAutoSync();
+    } else {
+      activitySyncService.stopAutoSync();
+    }
+  };
+
+  const handleManualSync = async () => {
+    try {
+      const result = await activitySyncService.performSync();
+      console.log('Sync completed:', result);
+      await loadRecentActivities();
+      loadPendingEntries();
+    } catch (error) {
+      console.error('Manual sync failed:', error);
+    }
+  };
+
+  const handleApprovePending = async (tempId: string) => {
+    try {
+      await activitySyncService.approvePendingEntry(tempId);
+      loadPendingEntries();
+    } catch (error) {
+      console.error('Failed to approve entry:', error);
+    }
+  };
+
+  const handleRejectPending = (tempId: string) => {
+    activitySyncService.rejectPendingEntry(tempId);
+    loadPendingEntries();
+  };
+
   const toggleService = (service: keyof IntegrationStatus) => {
     setEnabledServices(prev => ({
       ...prev,
@@ -80,8 +134,8 @@ export default function GoogleIntegrations() {
     switch (type) {
       case 'gmail':
         return (
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-.904.732-1.636 1.636-1.636h3.819l6.545 4.91 6.545-4.91h3.819A1.636 1.636 0 0 1 24 5.457z"/>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         );
       case 'calendar':
@@ -103,7 +157,11 @@ export default function GoogleIntegrations() {
           </svg>
         );
       default:
-        return null;
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+        );
     }
   };
 
@@ -194,6 +252,69 @@ export default function GoogleIntegrations() {
                 >
                   Disconnect
                 </button>
+              </div>
+
+              {/* Sync Controls */}
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Activity Sync
+                </h3>
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <h4 className="font-medium text-gray-900">Automatic Time Tracking</h4>
+                    <p className="text-sm text-gray-600">Automatically convert Google activities to time entries</p>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <button
+                      onClick={handleManualSync}
+                      className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    >
+                      Sync Now
+                    </button>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={syncEnabled}
+                        onChange={(e) => handleSyncToggle(e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Auto-sync</span>
+                    </label>
+                  </div>
+                </div>
+                {pendingEntries.length > 0 && (
+                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <h4 className="font-medium text-yellow-900 mb-2">
+                      {pendingEntries.length} activities pending approval
+                    </h4>
+                    <div className="space-y-2">
+                      {pendingEntries.slice(0, 3).map((entry) => (
+                        <div key={entry.tempId} className="flex items-center justify-between text-sm">
+                          <span className="text-yellow-800">{entry.description}</span>
+                          <div className="space-x-2">
+                            <button
+                              onClick={() => handleApprovePending(entry.tempId)}
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleRejectPending(entry.tempId)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      {pendingEntries.length > 3 && (
+                        <p className="text-xs text-yellow-700">
+                          +{pendingEntries.length - 3} more pending...
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Service Toggles */}
