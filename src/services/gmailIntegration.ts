@@ -36,10 +36,22 @@ export class GmailIntegrationService {
         script.src = 'https://apis.google.com/js/api.js';
         script.onload = () => {
           window.gapi.load('auth2', () => {
+            // Use demo client ID for now - in production, this would be your real client ID
+            const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || 'demo-client-id';
+            if (clientId === 'demo-client-id') {
+              console.warn('Demo mode: Using mock Gmail integration');
+              resolve();
+              return;
+            }
+            
             window.gapi.auth2.init({
-              client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID
+              client_id: clientId
+            }).then(() => {
+              resolve();
+            }).catch((error) => {
+              console.error('Failed to initialize Google Auth:', error);
+              reject(error);
             });
-            resolve();
           });
         };
         script.onerror = reject;
@@ -52,7 +64,22 @@ export class GmailIntegrationService {
 
   async authenticateGmail(): Promise<boolean> {
     try {
+      const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || 'demo-client-id';
+      
+      // Demo mode - simulate successful authentication
+      if (clientId === 'demo-client-id') {
+        console.log('Demo mode: Simulating Gmail authentication');
+        this.accessToken = 'demo-token';
+        localStorage.setItem('gmail_demo_token', 'demo-token');
+        return true;
+      }
+
+      // Real authentication
       const authInstance = window.gapi.auth2.getAuthInstance();
+      if (!authInstance) {
+        throw new Error('Google Auth not initialized');
+      }
+      
       const user = await authInstance.signIn({
         scope: this.SCOPES.join(' ')
       });
@@ -66,7 +93,20 @@ export class GmailIntegrationService {
   }
 
   async isAuthenticated(): Promise<boolean> {
-    if (!this.accessToken) return false;
+    if (!this.accessToken) {
+      // Check for demo token
+      const demoToken = localStorage.getItem('gmail_demo_token');
+      if (demoToken) {
+        this.accessToken = demoToken;
+        return true;
+      }
+      return false;
+    }
+    
+    // Demo mode
+    if (this.accessToken === 'demo-token') {
+      return true;
+    }
     
     try {
       const response = await fetch('https://www.googleapis.com/gmail/v1/users/me/profile', {
@@ -82,6 +122,42 @@ export class GmailIntegrationService {
 
   async getRecentEmails(maxResults: number = 50): Promise<GmailMessage[]> {
     if (!this.accessToken) throw new Error('Not authenticated');
+
+    // Demo mode - return mock data
+    if (this.accessToken === 'demo-token') {
+      return [
+        {
+          id: 'demo1',
+          threadId: 'thread1',
+          labelIds: ['INBOX'],
+          snippet: 'Project update and next steps for the Q4 deliverables...',
+          payload: {
+            headers: [
+              { name: 'Subject', value: 'Project Update - Q4 Deliverables' },
+              { name: 'From', value: 'John Smith <john@salesforce.com>' },
+              { name: 'Date', value: new Date().toISOString() }
+            ],
+            body: { data: 'demo-content' }
+          },
+          internalDate: Date.now().toString()
+        },
+        {
+          id: 'demo2', 
+          threadId: 'thread2',
+          labelIds: ['INBOX'],
+          snippet: 'Meeting follow-up and action items from client call...',
+          payload: {
+            headers: [
+              { name: 'Subject', value: 'Follow-up: Client Strategy Meeting' },
+              { name: 'From', value: 'Sarah Johnson <sarah@hubspot.com>' },
+              { name: 'Date', value: new Date(Date.now() - 3600000).toISOString() }
+            ],
+            body: { data: 'demo-content' }
+          },
+          internalDate: (Date.now() - 3600000).toString()
+        }
+      ];
+    }
 
     try {
       // Get list of message IDs
