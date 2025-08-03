@@ -123,10 +123,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const { getEventsForDate } = useCalendarEvents();
   
   const weekDates = getWeekDates(currentWeek);
-  console.log('WEEK DATES:', weekDates);
-  weekDates.forEach(date => {
+  console.log('🗓️ WEEK DATES DEBUG:', weekDates);
+  weekDates.forEach((date, index) => {
     const dayName = getDayOfWeek(date);
-    console.log(`${date} -> ${dayName}`);
+    const dateObj = new Date(date);
+    const jsDay = dateObj.getDay(); // 0=Sunday, 1=Monday, etc.
+    console.log(`Index ${index}: ${date} -> ${dayName} (JS day: ${jsDay})`);
   });
   
   
