@@ -14,8 +14,10 @@ interface DashboardProps {
 
 const getDayOfWeek = (date: string) => {
   const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-  const dateObj = new Date(date);
+  const dateObj = new Date(date + 'T00:00:00'); // Force consistent parsing
   const jsDay = dateObj.getDay(); // 0=Sunday, 1=Monday, etc.
+  
+  console.log(`🔍 getDayOfWeek debug: ${date} -> JS day ${jsDay}`);
   
   // Map JavaScript days to workweek days
   // JS: Sun=0, Mon=1, Tue=2, Wed=3, Thu=4, Fri=5, Sat=6
@@ -29,7 +31,9 @@ const getDayOfWeek = (date: string) => {
   };
   
   const workDay = workDayMap[jsDay];
-  return workDay !== undefined ? dayNames[workDay] : null;
+  const result = workDay !== undefined ? dayNames[workDay] : null;
+  console.log(`🔍 Mapped to: ${result} (workDay index: ${workDay})`);
+  return result;
 };
 
 const getWeekDates = (currentDate: Date) => {
