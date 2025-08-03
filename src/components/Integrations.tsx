@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Integration } from '../types';
+import { GmailAuth } from './GmailAuth';
 
 interface IntegrationsProps {
   integrations: Integration[];
@@ -38,6 +39,27 @@ const availableIntegrations: IntegrationConfig[] = [
       'Sign in to your Google account',
       'Grant calendar read permissions',
       'Configure automatic import settings'
+    ]
+  },
+  {
+    id: 'gmail',
+    name: 'Gmail',
+    description: 'Track time spent reading and writing emails with AI-powered categorization',
+    icon: '📧',
+    color: '#EA4335',
+    category: 'Communication',
+    status: 'available',
+    features: [
+      'Automatic email reading time tracking',
+      'AI-powered client and project detection',
+      'Smart billable time classification',
+      'Real-time activity monitoring'
+    ],
+    setupSteps: [
+      'Click "Connect Gmail" below',
+      'Sign in to your Google account',
+      'Grant Gmail read permissions',
+      'Start automatic email tracking'
     ]
   },
   {
@@ -173,8 +195,8 @@ export const Integrations: React.FC<IntegrationsProps> = ({ integrations, onTogg
   };
 
   const handleConnect = (integrationId: string) => {
-    if (integrationId === 'google-calendar') {
-      // For demo purposes, we'll show a setup modal instead of trying OAuth
+    if (integrationId === 'google-calendar' || integrationId === 'gmail') {
+      // Show setup modal for Google integrations
       setShowSetupModal(integrationId);
     } else {
       // For other integrations, show coming soon
@@ -227,44 +249,52 @@ export const Integrations: React.FC<IntegrationsProps> = ({ integrations, onTogg
         <div className="featured-integration">
           <div className="featured-content">
             <div className="featured-text">
-              <h2>🎯 Most Popular: Google Calendar</h2>
+              <h2>🎯 NEW: AI-Powered Gmail Integration</h2>
               <p>
-                Automatically convert your calendar meetings into time entries. 
-                Perfect for consultants and service providers who spend time in client meetings.
+                Automatically track time spent reading and writing emails with intelligent client and project detection. 
+                Perfect for professionals who handle extensive email communication.
               </p>
               <div className="featured-benefits">
                 <div className="benefit-item">
-                  <div className="benefit-icon">⚡</div>
-                  <div>Save 15+ minutes daily on manual time entry</div>
+                  <div className="benefit-icon">🤖</div>
+                  <div>AI automatically categorizes emails by client and project</div>
                 </div>
                 <div className="benefit-item">
-                  <div className="benefit-icon">🎯</div>
-                  <div>Never miss billable meeting time again</div>
+                  <div className="benefit-icon">📧</div>
+                  <div>Track exact time spent on email activities</div>
                 </div>
                 <div className="benefit-item">
-                  <div className="benefit-icon">📊</div>
-                  <div>Better utilization tracking and reporting</div>
+                  <div className="benefit-icon">💰</div>
+                  <div>Smart billable time detection</div>
                 </div>
               </div>
-              <button 
-                className="btn btn-primary btn-large"
-                onClick={() => handleConnect('google-calendar')}
-              >
-                📅 Connect Google Calendar
-              </button>
+              <div className="featured-buttons">
+                <button 
+                  className="btn btn-primary btn-large"
+                  onClick={() => handleConnect('gmail')}
+                >
+                  📧 Connect Gmail
+                </button>
+                <button 
+                  className="btn btn-secondary btn-large"
+                  onClick={() => handleConnect('google-calendar')}
+                >
+                  📅 Connect Calendar
+                </button>
+              </div>
             </div>
             <div className="featured-visual">
               <div className="integration-preview">
                 <div className="preview-item">
-                  <div className="preview-icon">📅</div>
+                  <div className="preview-icon">📧</div>
                   <div className="preview-text">
-                    <div className="preview-title">Client Strategy Meeting</div>
-                    <div className="preview-time">2:00 PM - 3:30 PM</div>
+                    <div className="preview-title">Client Proposal Review</div>
+                    <div className="preview-time">Email from client@company.com</div>
                   </div>
                   <div className="preview-arrow">→</div>
                   <div className="preview-entry">
-                    <div className="entry-badge">⏱️ 1.5h</div>
-                    <div className="entry-label">Auto-tracked</div>
+                    <div className="entry-badge">⏱️ 0.3h</div>
+                    <div className="entry-label">AI-tracked</div>
                   </div>
                 </div>
               </div>
@@ -334,7 +364,9 @@ export const Integrations: React.FC<IntegrationsProps> = ({ integrations, onTogg
         <div className="modal-overlay" onClick={() => setShowSetupModal(null)}>
           <div className="modal-content setup-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>🔗 Connect Google Calendar</h3>
+              <h3>
+                {showSetupModal === 'gmail' ? '📧 Connect Gmail' : '🔗 Connect Google Calendar'}
+              </h3>
               <button 
                 className="modal-close"
                 onClick={() => setShowSetupModal(null)}
@@ -343,40 +375,55 @@ export const Integrations: React.FC<IntegrationsProps> = ({ integrations, onTogg
               </button>
             </div>
             <div className="modal-body">
-              <div className="setup-steps">
-                <h4>Setup Steps:</h4>
-                <ol>
-                  <li>Click "Authorize Access" below to open Google's authentication</li>
-                  <li>Sign in to your Google account</li>
-                  <li>Grant TimeBeacon permission to read your calendar</li>
-                  <li>Configure which calendars to sync</li>
-                  <li>Set automatic import preferences</li>
-                </ol>
-              </div>
-              
-              <div className="setup-security">
-                <h4>🔒 Privacy & Security:</h4>
-                <ul>
-                  <li>✅ We only read calendar event titles, times, and attendees</li>
-                  <li>✅ We never access email or other Google services</li>
-                  <li>✅ You can disconnect at any time</li>
-                  <li>✅ All data stays within your TimeBeacon account</li>
-                </ul>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button 
-                className="btn btn-secondary"
-                onClick={() => setShowSetupModal(null)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="btn btn-primary"
-                onClick={handleGoogleCalendarSetup}
-              >
-                🔐 Authorize Access
-              </button>
+              {showSetupModal === 'gmail' ? (
+                <GmailAuth
+                  onAuthSuccess={() => {
+                    setShowSetupModal(null);
+                    // Update integration status
+                  }}
+                  onAuthError={(error) => {
+                    console.error('Gmail auth error:', error);
+                    alert('Failed to connect Gmail: ' + error);
+                  }}
+                />
+              ) : (
+                <>
+                  <div className="setup-steps">
+                    <h4>Setup Steps:</h4>
+                    <ol>
+                      <li>Click "Authorize Access" below to open Google's authentication</li>
+                      <li>Sign in to your Google account</li>
+                      <li>Grant TimeBeacon permission to read your calendar</li>
+                      <li>Configure which calendars to sync</li>
+                      <li>Set automatic import preferences</li>
+                    </ol>
+                  </div>
+                  
+                  <div className="setup-security">
+                    <h4>🔒 Privacy & Security:</h4>
+                    <ul>
+                      <li>✅ We only read calendar event titles, times, and attendees</li>
+                      <li>✅ We never access email or other Google services</li>
+                      <li>✅ You can disconnect at any time</li>
+                      <li>✅ All data stays within your TimeBeacon account</li>
+                    </ul>
+                  </div>
+                  <div className="modal-footer">
+                    <button 
+                      className="btn btn-secondary"
+                      onClick={() => setShowSetupModal(null)}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      className="btn btn-primary"
+                      onClick={handleGoogleCalendarSetup}
+                    >
+                      🔐 Authorize Access
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
