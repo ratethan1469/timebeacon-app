@@ -2,6 +2,27 @@ import React, { useState } from 'react';
 import { TimeEntry, Project } from '../types';
 import { MultiSelect } from './MultiSelect';
 
+interface ColumnConfig {
+  id: string;
+  label: string;
+  field: string;
+  type: 'text' | 'number' | 'date' | 'time' | 'currency' | 'percentage';
+  visible: boolean;
+  order: number;
+  width?: number;
+}
+
+interface ReportConfig {
+  id: string;
+  title: string;
+  description?: string;
+  columns: ColumnConfig[];
+  chartType: 'bar' | 'donut' | 'line' | 'area' | 'scatter';
+  groupBy?: string;
+  sortBy?: string;
+  filterBy?: string;
+}
+
 interface ReportsProps {
   entries: TimeEntry[];
   projects: Project[];
@@ -10,14 +31,12 @@ interface ReportsProps {
 interface SavedReport {
   id: string;
   name: string;
-  reportTypes: ReportType[];
+  reportConfig: ReportConfig;
   dateRange: { start: string; end: string };
   selectedProjects: string[];
-  chartTypes: ('donut' | 'bar' | 'line')[];
   createdAt: string;
 }
 
-type ReportType = 'utilization' | 'productivity' | 'project-breakdown' | 'time-distribution' | 'meeting-analysis';
 
 // Helper function to get current week dates (Monday to Friday)
 const getCurrentWeekRange = () => {
@@ -34,15 +53,40 @@ const getCurrentWeekRange = () => {
   };
 };
 
+const DEFAULT_COLUMNS: ColumnConfig[] = [
+  { id: 'date', label: 'Date', field: 'date', type: 'date', visible: true, order: 1 },
+  { id: 'startTime', label: 'Start Time', field: 'startTime', type: 'time', visible: true, order: 2 },
+  { id: 'endTime', label: 'End Time', field: 'endTime', type: 'time', visible: true, order: 3 },
+  { id: 'duration', label: 'Duration', field: 'duration', type: 'number', visible: true, order: 4 },
+  { id: 'client', label: 'Client', field: 'client', type: 'text', visible: true, order: 5 },
+  { id: 'project', label: 'Project', field: 'project', type: 'text', visible: true, order: 6 },
+  { id: 'description', label: 'Description', field: 'description', type: 'text', visible: true, order: 7 },
+  { id: 'status', label: 'Status', field: 'status', type: 'text', visible: true, order: 8 },
+  { id: 'billable', label: 'Billable', field: 'billable', type: 'text', visible: true, order: 9 },
+  { id: 'category', label: 'Category', field: 'category', type: 'text', visible: false, order: 10 },
+  { id: 'source', label: 'Source', field: 'source', type: 'text', visible: false, order: 11 },
+  { id: 'meetingType', label: 'Meeting Type', field: 'meetingType', type: 'text', visible: false, order: 12 }
+];
+
 export const Reports: React.FC<ReportsProps> = ({ entries, projects }) => {
   const [dateRange, setDateRange] = useState(getCurrentWeekRange());
-  
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
-  const [selectedChartTypes, setSelectedChartTypes] = useState<('donut' | 'bar' | 'line')[]>(['donut']);
-  const [selectedReportTypes, setSelectedReportTypes] = useState<ReportType[]>(['utilization', 'project-breakdown']);
   const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [reportName, setReportName] = useState('');
+  const [showColumnManager, setShowColumnManager] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  
+  // Report configuration state
+  const [reportConfig, setReportConfig] = useState<ReportConfig>({
+    id: 'default',
+    title: 'Time Entry Report',
+    description: 'Comprehensive analysis of time entries',
+    columns: DEFAULT_COLUMNS,
+    chartType: 'bar',
+    groupBy: 'project',
+    sortBy: 'date'
+  });
   
   const filteredEntries = entries.filter(entry => {
     const entryDate = new Date(entry.date);
@@ -54,6 +98,94 @@ export const Reports: React.FC<ReportsProps> = ({ entries, projects }) => {
     
     return inDateRange && inProject;
   });
+
+  // Column management functions
+  const updateColumnLabel = (columnId: string, newLabel: string) => {
+    setReportConfig(prev => ({
+      ...prev,
+      columns: prev.columns.map(col => 
+        col.id === columnId ? { ...col, label: newLabel } : col
+      )
+    }));
+  };
+
+  const toggleColumnVisibility = (columnId: string) => {
+    setReportConfig(prev => ({
+      ...prev,
+      columns: prev.columns.map(col => 
+        col.id === columnId ? { ...col, visible: !col.visible } : col
+      )
+    }));
+  };
+
+  const moveColumn = (columnId: string, direction: 'up' | 'down') => {
+    setReportConfig(prev => {
+      const columns = [...prev.columns];
+      const currentIndex = columns.findIndex(col => col.id === columnId);
+      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      
+      if (newIndex >= 0 && newIndex < columns.length) {
+        [columns[currentIndex], columns[newIndex]] = [columns[newIndex], columns[currentIndex]];
+        // Update order numbers
+        columns.forEach((col, index) => {
+          col.order = index + 1;
+        });
+      }
+      
+      return { ...prev, columns };
+    });
+  };
+
+  const addCustomColumn = () => {
+    const newColumn: ColumnConfig = {
+      id: `custom_${Date.now()}`,
+      label: 'New Column',
+      field: 'custom',
+      type: 'text',
+      visible: true,
+      order: reportConfig.columns.length + 1
+    };
+    
+    setReportConfig(prev => ({
+      ...prev,
+      columns: [...prev.columns, newColumn]
+    }));
+  };
+
+  const removeColumn = (columnId: string) => {
+    setReportConfig(prev => ({
+      ...prev,
+      columns: prev.columns.filter(col => col.id !== columnId)
+    }));
+  };
+
+  const getVisibleColumns = () => {
+    return reportConfig.columns
+      .filter(col => col.visible)
+      .sort((a, b) => a.order - b.order);
+  };
+
+  const formatCellValue = (entry: TimeEntry, column: ColumnConfig) => {
+    const value = (entry as any)[column.field];
+    
+    switch (column.type) {
+      case 'date':
+        return new Date(value).toLocaleDateString();
+      case 'time':
+        return value;
+      case 'number':
+        return column.field === 'duration' ? formatHours(value) : value;
+      case 'currency':
+        return `$${value?.toFixed(2) || '0.00'}`;
+      case 'percentage':
+        return `${(value * 100).toFixed(1)}%`;
+      default:
+        if (column.field === 'billable') {
+          return value ? 'Yes' : 'No';
+        }
+        return value || '-';
+    }
+  };
 
   const formatHours = (hours: number) => {
     const h = Math.floor(hours);
@@ -251,10 +383,9 @@ export const Reports: React.FC<ReportsProps> = ({ entries, projects }) => {
     const newReport: SavedReport = {
       id: Date.now().toString(),
       name: reportName.trim(),
-      reportTypes: selectedReportTypes,
+      reportConfig,
       dateRange,
       selectedProjects,
-      chartTypes: selectedChartTypes,
       createdAt: new Date().toISOString()
     };
     
@@ -264,31 +395,15 @@ export const Reports: React.FC<ReportsProps> = ({ entries, projects }) => {
   };
 
   const loadSavedReport = (report: SavedReport) => {
-    setSelectedReportTypes(report.reportTypes);
+    setReportConfig(report.reportConfig);
     setDateRange(report.dateRange);
     setSelectedProjects(report.selectedProjects);
-    setSelectedChartTypes(report.chartTypes);
   };
 
   const deleteSavedReport = (reportId: string) => {
     setSavedReports(prev => prev.filter(r => r.id !== reportId));
   };
 
-  // Report type definitions
-  const reportTypeOptions = [
-    { value: 'utilization', label: 'Utilization Analysis' },
-    { value: 'productivity', label: 'Productivity Metrics' },
-    { value: 'project-breakdown', label: 'Project Breakdown' },
-    { value: 'time-distribution', label: 'Time Distribution' },
-    { value: 'meeting-analysis', label: 'Meeting Analysis' }
-  ];
-
-  // Chart type definitions
-  const chartTypeOptions = [
-    { value: 'donut', label: 'Donut Chart' },
-    { value: 'bar', label: 'Bar Chart' },
-    { value: 'line', label: 'Line Chart' }
-  ];
 
   // Quick date range presets
   const setQuickDateRange = (type: string) => {
@@ -538,10 +653,28 @@ export const Reports: React.FC<ReportsProps> = ({ entries, projects }) => {
     <div>
       <div className="dashboard-header">
         <div>
-          <h1 className="dashboard-title">Reports & Analytics</h1>
-          <p className="dashboard-subtitle">Comprehensive insights and data exports</p>
+          {editingTitle ? (
+            <input
+              type="text"
+              value={reportConfig.title}
+              onChange={(e) => setReportConfig(prev => ({ ...prev, title: e.target.value }))}
+              onBlur={() => setEditingTitle(false)}
+              onKeyDown={(e) => e.key === 'Enter' && setEditingTitle(false)}
+              className="form-input"
+              style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}
+              autoFocus
+            />
+          ) : (
+            <h1 className="dashboard-title" onClick={() => setEditingTitle(true)} style={{ cursor: 'pointer' }}>
+              {reportConfig.title} ✏️
+            </h1>
+          )}
+          <p className="dashboard-subtitle">{reportConfig.description}</p>
         </div>
         <div className="export-actions">
+          <button className="btn btn-secondary" onClick={() => setShowColumnManager(true)}>
+            ⚙️ Manage Columns
+          </button>
           <button className="btn btn-secondary" onClick={exportToCSV}>
             📊 Export CSV
           </button>
@@ -590,17 +723,25 @@ export const Reports: React.FC<ReportsProps> = ({ entries, projects }) => {
         </div>
       )}
 
-      {/* Filters & Report Configuration */}
+      {/* Visual Report Configuration */}
       <div className="content-card" style={{ marginBottom: '24px' }}>
         <div className="card-header">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 className="card-title">Report Configuration</h2>
-            <button 
-              className="btn btn-primary"
-              onClick={() => setShowSaveModal(true)}
-            >
-              💾 Save Current View
-            </button>
+            <h2 className="card-title">Visual Report Configuration</h2>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                className="btn btn-secondary"
+                onClick={() => setShowColumnManager(true)}
+              >
+                🔧 Columns
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={() => setShowSaveModal(true)}
+              >
+                💾 Save Report
+              </button>
+            </div>
           </div>
         </div>
         <div style={{ padding: '32px' }}>
@@ -654,33 +795,35 @@ export const Reports: React.FC<ReportsProps> = ({ entries, projects }) => {
             </div>
           </div>
 
-          {/* Report Types */}
+          {/* Visual Chart Configuration */}
           <div className="form-row">
             <div className="form-group">
-              <label>Report Types</label>
-              <MultiSelect
-                options={reportTypeOptions}
-                selectedValues={selectedReportTypes}
-                onChange={(values) => setSelectedReportTypes(values as ReportType[])}
-                placeholder="Select report types..."
+              <label>Chart Type</label>
+              <select
+                value={reportConfig.chartType}
+                onChange={(e) => setReportConfig(prev => ({ ...prev, chartType: e.target.value as any }))}
                 className="form-input"
-              />
-              <small style={{ color: 'var(--text-secondary)', fontSize: '12px', lineHeight: '1.4' }}>
-                Choose multiple report types to display simultaneously
-              </small>
+              >
+                <option value="bar">📊 Bar Chart</option>
+                <option value="donut">🍩 Donut Chart</option>
+                <option value="line">📈 Line Chart</option>
+                <option value="area">🏔️ Area Chart</option>
+                <option value="scatter">⚫ Scatter Plot</option>
+              </select>
             </div>
             <div className="form-group">
-              <label>Chart Types</label>
-              <MultiSelect
-                options={chartTypeOptions}
-                selectedValues={selectedChartTypes}
-                onChange={(values) => setSelectedChartTypes(values as ('donut' | 'bar' | 'line')[])}
-                placeholder="Select chart types..."
+              <label>Group Data By</label>
+              <select
+                value={reportConfig.groupBy}
+                onChange={(e) => setReportConfig(prev => ({ ...prev, groupBy: e.target.value }))}
                 className="form-input"
-              />
-              <small style={{ color: 'var(--text-secondary)', fontSize: '12px', lineHeight: '1.4' }}>
-                Choose multiple chart types to display simultaneously
-              </small>
+              >
+                <option value="project">Project</option>
+                <option value="client">Client</option>
+                <option value="status">Status</option>
+                <option value="category">Category</option>
+                <option value="date">Date</option>
+              </select>
             </div>
           </div>
 
@@ -752,50 +895,98 @@ export const Reports: React.FC<ReportsProps> = ({ entries, projects }) => {
         </div>
       </div>
 
-      {/* Charts */}
-      <div className="charts-grid">
-        {selectedChartTypes.includes('donut') && (
-          <>
-            <DonutChart data={projectStats} title="Hours by Project (Donut)" />
-          </>
-        )}
-        
-        {selectedChartTypes.includes('bar') && (
-          <>
-            <BarChart data={projectStats} title="Hours by Project (Bar)" />
-          </>
-        )}
-        
-        {selectedChartTypes.includes('line') && Object.keys(dailyStats).length > 1 && (
-          <div style={{ gridColumn: '1 / -1' }}>
-            <LineChart data={dailyStats} title="Daily Hours Trend (Line)" />
+      {/* Visual Chart Display */}
+      <div className="content-card" style={{ marginBottom: '24px' }}>
+        <div className="card-header">
+          <h2 className="card-title">Visual Analysis - {reportConfig.title}</h2>
+        </div>
+        <div style={{ padding: '24px' }}>
+          <div className="chart-display">
+            {reportConfig.chartType === 'donut' && (
+              <DonutChart data={projectStats} title={`Hours by ${reportConfig.groupBy || 'Project'}`} />
+            )}
+            {reportConfig.chartType === 'bar' && (
+              <BarChart data={projectStats} title={`Hours by ${reportConfig.groupBy || 'Project'}`} />
+            )}
+            {reportConfig.chartType === 'line' && Object.keys(dailyStats).length > 1 && (
+              <LineChart data={dailyStats} title="Daily Hours Trend" />
+            )}
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Data Tables */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginTop: '32px' }}>
+      {/* Dynamic Data Table */}
+      <div className="content-card" style={{ marginTop: '24px' }}>
+        <div className="card-header">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 className="card-title">Data Table - {reportConfig.title}</h2>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+                Showing {getVisibleColumns().length} of {reportConfig.columns.length} columns
+              </span>
+              <button 
+                className="btn btn-small btn-secondary"
+                onClick={() => setShowColumnManager(true)}
+              >
+                ⚙️ Manage
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="table-container">
+          <table className="data-table dynamic-table">
+            <thead>
+              <tr>
+                {getVisibleColumns().map(column => (
+                  <th key={column.id}>
+                    {column.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEntries.slice(0, 50).map((entry, index) => (
+                <tr key={entry.id || index}>
+                  {getVisibleColumns().map(column => (
+                    <td key={column.id}>
+                      {formatCellValue(entry, column)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filteredEntries.length > 50 && (
+            <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+              Showing first 50 of {filteredEntries.length} entries. Export to see all data.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Summary Statistics */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginTop: '24px' }}>
         <div className="content-card">
           <div className="card-header">
-            <h2 className="card-title">Top Projects</h2>
+            <h2 className="card-title">Summary by {reportConfig.groupBy || 'Project'}</h2>
           </div>
           <div className="table-container">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Project</th>
+                  <th>{reportConfig.groupBy || 'Project'}</th>
                   <th>Hours</th>
                   <th>Entries</th>
                   <th>% of Total</th>
                 </tr>
               </thead>
               <tbody>
-                {Object.entries(projectBreakdownStats)
+                {Object.entries(projectStats)
                   .sort(([,a], [,b]) => b.hours - a.hours)
                   .slice(0, 10)
-                  .map(([project, stats]) => (
-                    <tr key={project}>
-                      <td>{project}</td>
+                  .map(([key, stats]) => (
+                    <tr key={key}>
+                      <td>{key}</td>
                       <td className="time-value">{formatHours(stats.hours)}</td>
                       <td>{stats.count}</td>
                       <td>{((stats.hours / totalHours) * 100).toFixed(1)}%</td>
@@ -865,11 +1056,12 @@ export const Reports: React.FC<ReportsProps> = ({ entries, projects }) => {
               <div className="report-summary">
                 <h4>Current Configuration:</h4>
                 <ul>
-                  <li><strong>Report Types:</strong> {selectedReportTypes.map(type => reportTypeOptions.find(opt => opt.value === type)?.label).join(', ')}</li>
+                  <li><strong>Report Title:</strong> {reportConfig.title}</li>
                   <li><strong>Date Range:</strong> {new Date(dateRange.start).toLocaleDateString()} - {new Date(dateRange.end).toLocaleDateString()}</li>
-                  <li><strong>Focus:</strong> Project-based analysis</li>
+                  <li><strong>Chart Type:</strong> {reportConfig.chartType}</li>
+                  <li><strong>Group By:</strong> {reportConfig.groupBy}</li>
                   <li><strong>Projects:</strong> {selectedProjects.length === 0 ? 'All' : selectedProjects.join(', ')}</li>
-                  <li><strong>Chart Types:</strong> {selectedChartTypes.map(type => chartTypeOptions.find(opt => opt.value === type)?.label).join(', ')}</li>
+                  <li><strong>Visible Columns:</strong> {getVisibleColumns().length} of {reportConfig.columns.length}</li>
                 </ul>
               </div>
             </div>
@@ -892,98 +1084,95 @@ export const Reports: React.FC<ReportsProps> = ({ entries, projects }) => {
         </div>
       )}
 
-      {/* Additional Report Types */}
-      {selectedReportTypes.includes('productivity') && (
-        <div className="content-card" style={{ marginBottom: '24px' }}>
-          <div className="card-header">
-            <h2 className="card-title">Productivity Metrics</h2>
-          </div>
-          <div style={{ padding: '24px' }}>
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-label">Avg. Hours per Day</div>
-                <div className="stat-value">{(totalHours / Math.max(1, new Set(filteredEntries.map(e => e.date)).size)).toFixed(1)}h</div>
+      {/* Column Manager Modal */}
+      {showColumnManager && (
+        <div className="modal-overlay" onClick={() => setShowColumnManager(false)}>
+          <div className="modal-content column-manager-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🔧 Column Manager</h3>
+              <button 
+                className="modal-close"
+                onClick={() => setShowColumnManager(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div style={{ marginBottom: '20px' }}>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                  Customize your report columns: show/hide, rename, and reorder columns.
+                </p>
+                <button 
+                  className="btn btn-secondary"
+                  onClick={addCustomColumn}
+                  style={{ marginBottom: '16px' }}
+                >
+                  ➕ Add Custom Column
+                </button>
               </div>
-              <div className="stat-card">
-                <div className="stat-label">Automated vs Manual</div>
-                <div className="stat-value">{((filteredEntries.filter(e => e.automated).length / filteredEntries.length) * 100).toFixed(0)}% Auto</div>
+              
+              <div className="column-list">
+                {reportConfig.columns
+                  .sort((a, b) => a.order - b.order)
+                  .map((column, index) => (
+                    <div key={column.id} className="column-item">
+                      <div className="column-controls">
+                        <input
+                          type="checkbox"
+                          checked={column.visible}
+                          onChange={() => toggleColumnVisibility(column.id)}
+                          className="column-checkbox"
+                        />
+                        <input
+                          type="text"
+                          value={column.label}
+                          onChange={(e) => updateColumnLabel(column.id, e.target.value)}
+                          className="column-label-input"
+                          style={{ flex: 1, marginLeft: '8px' }}
+                        />
+                        <span className="column-type">{column.type}</span>
+                        <div className="column-move-buttons">
+                          <button
+                            onClick={() => moveColumn(column.id, 'up')}
+                            disabled={index === 0}
+                            className="btn btn-small btn-secondary"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            onClick={() => moveColumn(column.id, 'down')}
+                            disabled={index === reportConfig.columns.length - 1}
+                            className="btn btn-small btn-secondary"
+                          >
+                            ↓
+                          </button>
+                        </div>
+                        {column.id.startsWith('custom_') && (
+                          <button
+                            onClick={() => removeColumn(column.id)}
+                            className="btn btn-small btn-danger"
+                            style={{ marginLeft: '8px' }}
+                          >
+                            🗑️
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
               </div>
-              <div className="stat-card">
-                <div className="stat-label">Meeting Efficiency</div>
-                <div className="stat-value">{(filteredEntries.filter(e => e.meetingType).reduce((sum, e) => sum + e.duration, 0) / totalHours * 100).toFixed(0)}% Meetings</div>
-              </div>
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="btn btn-secondary"
+                onClick={() => setShowColumnManager(false)}
+              >
+                Done
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {selectedReportTypes.includes('time-distribution') && (
-        <div className="content-card" style={{ marginBottom: '24px' }}>
-          <div className="card-header">
-            <h2 className="card-title">Time Distribution Analysis</h2>
-          </div>
-          <div style={{ padding: '24px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-              <div>
-                <h4>By Category</h4>
-                <div className="category-breakdown">
-                  {Object.entries(filteredEntries.reduce((acc, entry) => {
-                    acc[entry.category] = (acc[entry.category] || 0) + entry.duration;
-                    return acc;
-                  }, {} as Record<string, number>)).map(([category, hours]) => (
-                    <div key={category} className="category-item">
-                      <span className="category-label">{category}</span>
-                      <span className="category-hours">{formatHours(hours)}</span>
-                      <span className="category-percentage">({((hours / totalHours) * 100).toFixed(1)}%)</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h4>By Status</h4>
-                <div className="status-breakdown">
-                  {Object.entries(statusStats).map(([status, stats]) => (
-                    <div key={status} className="status-item">
-                      <span className="status-label">{status}</span>
-                      <span className="status-hours">{formatHours(stats.hours)}</span>
-                      <span className="status-percentage">({((stats.hours / totalHours) * 100).toFixed(1)}%)</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedReportTypes.includes('meeting-analysis') && (
-        <div className="content-card" style={{ marginBottom: '24px' }}>
-          <div className="card-header">
-            <h2 className="card-title">Meeting Analysis</h2>
-          </div>
-          <div style={{ padding: '24px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
-              {Object.entries(filteredEntries.filter(e => e.meetingType).reduce((acc, entry) => {
-                const type = entry.meetingType || 'other';
-                if (!acc[type]) acc[type] = { count: 0, hours: 0, entries: [] };
-                acc[type].count += 1;
-                acc[type].hours += entry.duration;
-                acc[type].entries.push(entry);
-                return acc;
-              }, {} as Record<string, { count: number; hours: number; entries: TimeEntry[] }>)).map(([type, data]) => (
-                <div key={type} className="meeting-type-card">
-                  <h4>{type.replace('-', ' ').toUpperCase()}</h4>
-                  <div className="meeting-stats">
-                    <p><strong>Total Meetings:</strong> {data.count}</p>
-                    <p><strong>Total Time:</strong> {formatHours(data.hours)}</p>
-                    <p><strong>Avg Duration:</strong> {formatHours(data.hours / data.count)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

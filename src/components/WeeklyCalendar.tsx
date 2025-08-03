@@ -51,7 +51,11 @@ const getWeekDates = (currentDate: Date) => {
   for (let i = 0; i < 5; i++) {
     const date = new Date(monday);
     date.setDate(monday.getDate() + i);
-    week.push(date.toISOString().split('T')[0]);
+    // Use local date formatting to avoid timezone issues
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    week.push(`${year}-${month}-${day}`);
   }
   
   return week;
