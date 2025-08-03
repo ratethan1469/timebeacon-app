@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { inputValidator } from '../services/inputValidator';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showDemoCredentials, setShowDemoCredentials] = useState(false);
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -13,48 +15,51 @@ const Login: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    if (!email || !password) {
-      setError('Please fill in all fields');
+    // Validate inputs
+    const emailValidation = inputValidator.validateField(email, {
+      required: true,
+      type: 'email',
+      errorMessage: 'Please enter a valid email address'
+    });
+
+    const passwordValidation = inputValidator.validateField(password, {
+      required: true,
+      minLength: 8,
+      errorMessage: 'Password must be at least 8 characters'
+    });
+
+    if (!emailValidation.isValid) {
+      setError(emailValidation.errors[0]);
       return;
     }
 
-    // Simple direct approach - create mock auth state and navigate
-    const mockUser = {
-      id: Math.random().toString(36).substr(2, 9),
-      visitorId: '12345',
-      email: email,
-      name: email.split('@')[0],
-      companyId: 'demo-company',
-      role: 'owner',
-      permissions: [],
-      profile: {
-        firstName: email.split('@')[0],
-        lastName: 'User',
-        jobTitle: 'CEO',
-        department: 'Executive',
-      },
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      mfaEnabled: false,
-    };
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.errors[0]);
+      return;
+    }
 
-    const mockCompany = {
-      id: 'demo-company',
-      accountId: '12345',
-      name: 'Demo Company',
-      slug: 'demo',
-      activeUsers: 1,
-      maxUsers: 50,
-    };
+    try {
+      const success = await login(email, password);
+      if (success) {
+        navigate('/dashboard');
+      } else {
+        setError('Invalid email or password');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Login failed. Please try again.');
+    }
+  };
 
-    // Store in localStorage for the app to pick up
-    localStorage.setItem('timebeacon_user', JSON.stringify(mockUser));
-    localStorage.setItem('timebeacon_company', JSON.stringify(mockCompany));
-    localStorage.setItem('timebeacon_access_token', 'demo-token');
+  const fillDemoCredentials = (role: 'admin' | 'manager' | 'employee') => {
+    const credentials = {
+      admin: { email: 'admin@demo.com', password: 'Admin123!' },
+      manager: { email: 'manager@demo.com', password: 'Manager123!' },
+      employee: { email: 'employee@demo.com', password: 'Employee123!' },
+    };
     
-    // Navigate to regular dashboard with the new features available
-    navigate('/dashboard');
+    setEmail(credentials[role].email);
+    setPassword(credentials[role].password);
+    setShowDemoCredentials(false);
   };
 
   return (
@@ -95,7 +100,56 @@ const Login: React.FC = () => {
           <button type="submit" className="login-button" disabled={isLoading}>
             {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
+          
+          <div className="demo-section">
+            <button 
+              type="button" 
+              className="demo-toggle-button"
+              onClick={() => setShowDemoCredentials(!showDemoCredentials)}
+            >
+              {showDemoCredentials ? 'Hide' : 'Show'} Demo Credentials
+            </button>
+            
+            {showDemoCredentials && (
+              <div className="demo-credentials">
+                <p>Try these demo accounts:</p>
+                <div className="demo-options">
+                  <button 
+                    type="button" 
+                    className="demo-credential-button"
+                    onClick={() => fillDemoCredentials('admin')}
+                  >
+                    Admin (Owner)
+                  </button>
+                  <button 
+                    type="button" 
+                    className="demo-credential-button"
+                    onClick={() => fillDemoCredentials('manager')}
+                  >
+                    Manager
+                  </button>
+                  <button 
+                    type="button" 
+                    className="demo-credential-button"
+                    onClick={() => fillDemoCredentials('employee')}
+                  >
+                    Employee
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </form>
+        
+        <div className="security-notice">
+          <p>🔒 This demo uses enhanced security features including:</p>
+          <ul>
+            <li>Input validation and sanitization</li>
+            <li>Rate limiting protection</li>
+            <li>Secure session management</li>
+            <li>CSRF protection</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

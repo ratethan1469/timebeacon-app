@@ -103,7 +103,41 @@ export interface User {
   avatar?: string;
 }
 
-export type UserRole = 'owner' | 'admin' | 'manager' | 'employee' | 'viewer';
+export type UserRole = 'owner' | 'admin' | 'manager' | 'individual_contributor' | 'employee' | 'viewer';
+
+// Role hierarchy and descriptions
+export const ROLE_HIERARCHY: Record<UserRole, { level: number; title: string; description: string }> = {
+  owner: {
+    level: 100,
+    title: 'Owner',
+    description: 'Full system access including billing and company management'
+  },
+  admin: {
+    level: 90,
+    title: 'Administrator', 
+    description: 'User and project management, settings control'
+  },
+  manager: {
+    level: 70,
+    title: 'Manager',
+    description: 'Team oversight with scoped permissions for team members'
+  },
+  individual_contributor: {
+    level: 50,
+    title: 'Individual Contributor',
+    description: 'Senior employee with project leadership and limited team visibility'
+  },
+  employee: {
+    level: 30,
+    title: 'Employee',
+    description: 'Self-service time tracking and basic project access'
+  },
+  viewer: {
+    level: 10,
+    title: 'Viewer',
+    description: 'Read-only access to own data'
+  }
+};
 
 export interface Permission {
   id: string;
@@ -120,7 +154,10 @@ export type PermissionResource =
   | 'reports' 
   | 'settings' 
   | 'billing' 
-  | 'integrations';
+  | 'integrations'
+  | 'teams'
+  | 'clients'
+  | 'analytics';
 
 export type PermissionAction = 
   | 'create' 
@@ -128,7 +165,11 @@ export type PermissionAction =
   | 'update' 
   | 'delete' 
   | 'approve' 
-  | 'export';
+  | 'export'
+  | 'invite'
+  | 'assign'
+  | 'review'
+  | 'manage';
 
 export interface PermissionScope {
   own?: boolean; // Can only access their own data
@@ -143,7 +184,10 @@ export interface UserProfile {
   jobTitle?: string;
   department?: string;
   manager?: string; // User ID of manager
+  directReports?: string[]; // User IDs of direct reports
   hourlyRate?: number;
+  skillTags?: string[];
+  accessLevel?: 'basic' | 'elevated' | 'senior';
   startDate?: string;
   phoneNumber?: string;
   location?: string;
@@ -234,35 +278,63 @@ export interface TeamMember extends User {
   };
 }
 
-// Role-based permission presets
+// Role-based permission presets with enhanced granularity
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   owner: [
-    { id: 'owner-all', resource: 'company', actions: ['create', 'read', 'update', 'delete'] },
-    { id: 'owner-users', resource: 'users', actions: ['create', 'read', 'update', 'delete'] },
-    { id: 'owner-projects', resource: 'projects', actions: ['create', 'read', 'update', 'delete'] },
-    { id: 'owner-reports', resource: 'reports', actions: ['create', 'read', 'export'] },
-    { id: 'owner-billing', resource: 'billing', actions: ['read', 'update'] },
+    { id: 'owner-company', resource: 'company', actions: ['create', 'read', 'update', 'delete', 'manage'], scope: { all: true } },
+    { id: 'owner-users', resource: 'users', actions: ['create', 'read', 'update', 'delete', 'invite', 'manage'], scope: { all: true } },
+    { id: 'owner-projects', resource: 'projects', actions: ['create', 'read', 'update', 'delete', 'assign', 'manage'], scope: { all: true } },
+    { id: 'owner-timeEntries', resource: 'timeEntries', actions: ['create', 'read', 'update', 'delete', 'approve'], scope: { all: true } },
+    { id: 'owner-reports', resource: 'reports', actions: ['create', 'read', 'export'], scope: { all: true } },
+    { id: 'owner-analytics', resource: 'analytics', actions: ['read', 'export'], scope: { all: true } },
+    { id: 'owner-billing', resource: 'billing', actions: ['read', 'update', 'manage'], scope: { all: true } },
+    { id: 'owner-settings', resource: 'settings', actions: ['read', 'update', 'manage'], scope: { all: true } },
+    { id: 'owner-integrations', resource: 'integrations', actions: ['create', 'read', 'update', 'delete', 'manage'], scope: { all: true } },
+    { id: 'owner-teams', resource: 'teams', actions: ['create', 'read', 'update', 'delete', 'manage'], scope: { all: true } },
+    { id: 'owner-clients', resource: 'clients', actions: ['create', 'read', 'update', 'delete', 'manage'], scope: { all: true } },
   ],
   admin: [
-    { id: 'admin-users', resource: 'users', actions: ['create', 'read', 'update'] },
-    { id: 'admin-projects', resource: 'projects', actions: ['create', 'read', 'update', 'delete'] },
-    { id: 'admin-reports', resource: 'reports', actions: ['create', 'read', 'export'] },
-    { id: 'admin-settings', resource: 'settings', actions: ['read', 'update'] },
+    { id: 'admin-company', resource: 'company', actions: ['read', 'update'], scope: { all: true } },
+    { id: 'admin-users', resource: 'users', actions: ['create', 'read', 'update', 'invite', 'manage'], scope: { all: true } },
+    { id: 'admin-projects', resource: 'projects', actions: ['create', 'read', 'update', 'delete', 'assign', 'manage'], scope: { all: true } },
+    { id: 'admin-timeEntries', resource: 'timeEntries', actions: ['read', 'update', 'approve'], scope: { all: true } },
+    { id: 'admin-reports', resource: 'reports', actions: ['create', 'read', 'export'], scope: { all: true } },
+    { id: 'admin-analytics', resource: 'analytics', actions: ['read', 'export'], scope: { all: true } },
+    { id: 'admin-settings', resource: 'settings', actions: ['read', 'update'], scope: { all: true } },
+    { id: 'admin-integrations', resource: 'integrations', actions: ['create', 'read', 'update', 'delete'], scope: { all: true } },
+    { id: 'admin-teams', resource: 'teams', actions: ['create', 'read', 'update', 'delete', 'manage'], scope: { all: true } },
+    { id: 'admin-clients', resource: 'clients', actions: ['create', 'read', 'update', 'delete'], scope: { all: true } },
   ],
   manager: [
-    { id: 'manager-team', resource: 'users', actions: ['read'], scope: { team: [] } },
-    { id: 'manager-projects', resource: 'projects', actions: ['create', 'read', 'update'] },
-    { id: 'manager-time', resource: 'timeEntries', actions: ['read', 'approve'], scope: { team: [] } },
-    { id: 'manager-reports', resource: 'reports', actions: ['read', 'export'], scope: { team: [] } },
+    { id: 'manager-users', resource: 'users', actions: ['read'], scope: { team: [], department: [] } },
+    { id: 'manager-projects', resource: 'projects', actions: ['create', 'read', 'update', 'assign'], scope: { team: [], own: true } },
+    { id: 'manager-timeEntries', resource: 'timeEntries', actions: ['read', 'approve', 'review'], scope: { team: [], own: true } },
+    { id: 'manager-reports', resource: 'reports', actions: ['read', 'export'], scope: { team: [], own: true } },
+    { id: 'manager-analytics', resource: 'analytics', actions: ['read'], scope: { team: [], own: true } },
+    { id: 'manager-teams', resource: 'teams', actions: ['read', 'manage'], scope: { team: [] } },
+    { id: 'manager-clients', resource: 'clients', actions: ['read', 'update'], scope: { team: [], own: true } },
+    { id: 'manager-own', resource: 'timeEntries', actions: ['create', 'read', 'update'], scope: { own: true } },
+  ],
+  individual_contributor: [
+    { id: 'ic-projects', resource: 'projects', actions: ['create', 'read', 'update'], scope: { own: true } },
+    { id: 'ic-timeEntries', resource: 'timeEntries', actions: ['create', 'read', 'update'], scope: { own: true } },
+    { id: 'ic-reports', resource: 'reports', actions: ['read', 'export'], scope: { own: true } },
+    { id: 'ic-analytics', resource: 'analytics', actions: ['read'], scope: { own: true } },
+    { id: 'ic-clients', resource: 'clients', actions: ['read', 'update'], scope: { own: true } },
+    { id: 'ic-team-visibility', resource: 'users', actions: ['read'], scope: { team: [] } },
+    { id: 'ic-project-lead', resource: 'projects', actions: ['assign', 'review'], scope: { own: true } },
   ],
   employee: [
-    { id: 'employee-own', resource: 'timeEntries', actions: ['create', 'read', 'update'], scope: { own: true } },
-    { id: 'employee-projects', resource: 'projects', actions: ['read'] },
+    { id: 'employee-timeEntries', resource: 'timeEntries', actions: ['create', 'read', 'update'], scope: { own: true } },
+    { id: 'employee-projects', resource: 'projects', actions: ['read'], scope: { own: true } },
     { id: 'employee-reports', resource: 'reports', actions: ['read'], scope: { own: true } },
+    { id: 'employee-clients', resource: 'clients', actions: ['read'], scope: { own: true } },
+    { id: 'employee-profile', resource: 'users', actions: ['read', 'update'], scope: { own: true } },
   ],
   viewer: [
-    { id: 'viewer-own', resource: 'timeEntries', actions: ['read'], scope: { own: true } },
-    { id: 'viewer-projects', resource: 'projects', actions: ['read'] },
+    { id: 'viewer-timeEntries', resource: 'timeEntries', actions: ['read'], scope: { own: true } },
+    { id: 'viewer-projects', resource: 'projects', actions: ['read'], scope: { own: true } },
+    { id: 'viewer-profile', resource: 'users', actions: ['read'], scope: { own: true } },
   ],
 };
 

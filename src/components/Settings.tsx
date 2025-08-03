@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Settings as SettingsType, Project } from '../types';
 import { MultiSelect } from './MultiSelect';
 import { projectTemplates, ProjectTemplate } from '../data/projectTemplates';
-import { PermissionsManager } from './PermissionsManager';
+import PermissionsManager from './PermissionsManager';
 import { useAuth } from '../contexts/AuthContext';
 
 interface SettingsProps {

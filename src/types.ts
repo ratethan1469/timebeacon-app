@@ -144,4 +144,4 @@ export interface Client {
   updatedAt: string;
 }
 
-export type NavigationItem = 'dashboard' | 'reports' | 'ai-insights' | 'integrations' | 'settings' | 'privacy';
+export type NavigationItem = 'dashboard' | 'reports' | 'ai-insights' | 'integrations' | 'permissions' | 'settings' | 'privacy';

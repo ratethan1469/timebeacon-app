@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Dashboard } from './Dashboard';
 import { Reports } from './Reports';
+import EnhancedReports from './EnhancedReports';
+import PermissionsManager from './PermissionsManager';
 import { Settings } from './Settings';
 import { Integrations } from './Integrations';
 import { PrivacyOwnership } from './PrivacyOwnership';
@@ -14,6 +16,7 @@ import { aiService } from '../services/aiService';
 export function AppContent() {
   const [activeItem, setActiveItem] = useState<NavigationItem>('dashboard');
   const [aiEnabled, setAiEnabled] = useState(false);
+  const [useEnhancedReports, setUseEnhancedReports] = useState(true);
   const timeTracker = useTimeTrackerSync();
 
   // Handle AI toggle
@@ -64,7 +67,9 @@ export function AppContent() {
           />
         );
       case 'reports':
-        return (
+        return useEnhancedReports ? (
+          <EnhancedReports />
+        ) : (
           <Reports 
             entries={timeTracker.timeEntries}
             projects={timeTracker.projects}
@@ -86,6 +91,8 @@ export function AppContent() {
             onToggleIntegration={timeTracker.toggleIntegration}
           />
         );
+      case 'permissions':
+        return <PermissionsManager />;
       case 'settings':
         return (
           <Settings 

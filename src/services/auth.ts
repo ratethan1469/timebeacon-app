@@ -27,9 +27,28 @@ class AuthService {
    * Login with email/password and optional company slug
    */
   async login(request: LoginRequest): Promise<LoginResponse> {
-    // For demo purposes, use mock authentication directly
-    // In production with real backend, remove this and uncomment the API calls below
-    return this.mockLogin(request);
+    // Validate input
+    if (!request.email || !request.password) {
+      throw new Error('Email and password are required');
+    }
+
+    if (!this.isValidEmail(request.email)) {
+      throw new Error('Invalid email format');
+    }
+
+    if (request.password.length < 8) {
+      throw new Error('Password must be at least 8 characters');
+    }
+
+    // Rate limiting
+    this.checkRateLimit(request.email);
+
+    // For demo with enhanced security
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      return this.secureLogin(request);
+    }
+
+    return this.productionLogin(request);
     
     /* Uncomment when real backend is ready:
     try {
@@ -72,8 +91,25 @@ class AuthService {
    * Sign up new company and owner user
    */
   async signup(request: SignupRequest): Promise<LoginResponse> {
-    // For demo purposes, use mock authentication directly
-    return this.mockSignup(request);
+    // Validate input
+    if (!request.email || !request.password || !request.companyName) {
+      throw new Error('Email, password, and company name are required');
+    }
+
+    if (!this.isValidEmail(request.email)) {
+      throw new Error('Invalid email format');
+    }
+
+    if (!this.isValidPassword(request.password)) {
+      throw new Error('Password must be at least 8 characters with uppercase, lowercase, and numbers');
+    }
+
+    // For demo with enhanced security
+    if (import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true') {
+      return this.secureSignup(request);
+    }
+
+    return this.productionSignup(request);
     
     /* Uncomment when real backend is ready:
     try {
@@ -147,11 +183,28 @@ class AuthService {
   /**
    * Logout and clear session
    */
-  logout(): void {
+  async logout(): Promise<void> {
+    const token = localStorage.getItem(this.TOKEN_KEY);
+    
+    // Clear local storage first
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_KEY);
     localStorage.removeItem(this.USER_KEY);
     localStorage.removeItem(this.COMPANY_KEY);
+    
+    // Notify server to invalidate session
+    if (token && !import.meta.env.DEV) {
+      try {
+        await fetch(`${this.API_BASE}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+      } catch (error) {
+        console.warn('Failed to notify server of logout:', error);
+      }
+    }
   }
 
   /**
@@ -227,9 +280,9 @@ class AuthService {
   }
 
   /**
-   * Get user permissions (role-based + custom)
+   * Get user permissions (role-based + custom) - public method
    */
-  private getUserPermissions(role: UserRole, customPermissions: Permission[]): Permission[] {
+  getUserPermissions(role: UserRole, customPermissions: Permission[]): Permission[] {
     const rolePermissions = ROLE_PERMISSIONS[role] || [];
     return [...rolePermissions, ...customPermissions];
   }
@@ -302,17 +355,173 @@ class AuthService {
   }
 
   /**
-   * Mock login for development - accepts any email/password
+   * Email validation
    */
-  private mockLogin(request: LoginRequest): LoginResponse {
-    // Accept any email/password combination
+  private isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  /**
+   * Password validation
+   */
+  private isValidPassword(password: string): boolean {
+    const minLength = 8;
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    
+    return password.length >= minLength && hasUppercase && hasLowercase && hasNumbers;
+  }
+
+  /**
+   * Rate limiting for authentication attempts
+   */
+  private checkRateLimit(email: string): void {
+    const key = `auth_attempts_${email}`;
+    const attempts = JSON.parse(localStorage.getItem(key) || '[]');
+    const now = Date.now();
+    const fiveMinutesAgo = now - 5 * 60 * 1000;
+    
+    // Remove old attempts
+    const recentAttempts = attempts.filter((timestamp: number) => timestamp > fiveMinutesAgo);
+    
+    if (recentAttempts.length >= 5) {
+      throw new Error('Too many login attempts. Please try again in 5 minutes.');
+    }
+    
+    // Record this attempt
+    recentAttempts.push(now);
+    localStorage.setItem(key, JSON.stringify(recentAttempts));
+  }
+
+  /**
+   * Secure demo login - validates credentials
+   */
+  private async secureLogin(request: LoginRequest): Promise<LoginResponse> {
+    // Simulate authentication delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Demo credentials for testing
+    const validCredentials = [
+      { email: 'admin@demo.com', password: 'Admin123!', role: 'owner' as UserRole },
+      { email: 'manager@demo.com', password: 'Manager123!', role: 'manager' as UserRole },
+      { email: 'employee@demo.com', password: 'Employee123!', role: 'employee' as UserRole },
+    ];
+    
+    const validUser = validCredentials.find(
+      cred => cred.email === request.email && cred.password === request.password
+    );
+    
+    if (!validUser) {
+      throw new Error('Invalid email or password');
+    }
+    
+    return this.createAuthResponse(request, validUser.role);
+  }
+
+  /**
+   * Production login with real API
+   */
+  private async productionLogin(request: LoginRequest): Promise<LoginResponse> {
+    try {
+      const response = await fetch(`${this.API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Login failed');
+      }
+
+      const data: LoginResponse = await response.json();
+      this.storeAuthData(data);
+      return data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Secure demo signup
+   */
+  private async secureSignup(request: SignupRequest): Promise<LoginResponse> {
+    // Simulate signup delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    return this.createAuthResponse({
+      email: request.email,
+      password: request.password,
+    }, 'owner');
+  }
+
+  /**
+   * Production signup with real API
+   */
+  private async productionSignup(request: SignupRequest): Promise<LoginResponse> {
+    try {
+      const response = await fetch(`${this.API_BASE}/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Signup failed');
+      }
+
+      const data: LoginResponse = await response.json();
+      this.storeAuthData(data);
+      return data;
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Store authentication data securely
+   */
+  private storeAuthData(data: LoginResponse): void {
+    localStorage.setItem(this.TOKEN_KEY, data.accessToken);
+    localStorage.setItem(this.REFRESH_KEY, data.refreshToken);
+    localStorage.setItem(this.USER_KEY, JSON.stringify(data.user));
+    localStorage.setItem(this.COMPANY_KEY, JSON.stringify(data.company));
+  }
+
+  /**
+   * Generate secure demo token
+   */
+  private generateSecureToken(): string {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  /**
+   * Create auth response for demo mode
+   */
+  private createAuthResponse(request: { email: string }, role: UserRole): LoginResponse {
+    const userId = crypto.randomUUID();
+    const companyId = crypto.randomUUID();
+    
+    // Generate secure demo token
+    const token = this.generateSecureToken();
     const mockUser: User = {
-      id: crypto.randomUUID(),
-      visitorId: request.visitorId || this.generateVisitorId(),
+      id: userId,
+      visitorId: this.generateVisitorId(),
       email: request.email,
       name: request.email.split('@')[0],
-      companyId: 'mock-company-id',
-      role: 'owner',
+      companyId: companyId,
+      role: role,
       permissions: [],
       profile: {
         firstName: request.email.split('@')[0],
@@ -348,13 +557,13 @@ class AuthService {
     };
 
     const mockCompany: Company = {
-      id: 'mock-company-id',
-      accountId: request.accountId || this.generateAccountId(),
+      id: companyId,
+      accountId: this.generateAccountId(),
       name: 'TimeBeacon Demo',
       slug: 'demo',
       subscription: {
-        id: 'mock-sub-id',
-        companyId: 'mock-company-id',
+        id: crypto.randomUUID(),
+        companyId: companyId,
         plan: 'professional',
         status: 'active',
         currentPeriodStart: new Date().toISOString(),
@@ -405,21 +614,12 @@ class AuthService {
     return {
       user: mockUser,
       company: mockCompany,
-      accessToken: 'mock-access-token',
-      refreshToken: 'mock-refresh-token',
+      accessToken: token,
+      refreshToken: this.generateSecureToken(),
       expiresIn: 3600,
     };
   }
 
-  /**
-   * Mock signup for development
-   */
-  private mockSignup(request: SignupRequest): LoginResponse {
-    return this.mockLogin({
-      email: request.email,
-      password: request.password,
-    });
-  }
 
   /**
    * Generate account ID (5-digit numeric)

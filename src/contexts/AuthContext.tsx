@@ -1,13 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/auth';
+import { sessionManager } from '../services/sessionManager';
 import { routingService } from '../services/routing';
 import { AuthState, LoginRequest, User, Company } from '../types/auth';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
   checkPermission: (resource: string, action: string) => boolean;
   currentRoute: { accountId?: string; visitorId?: string } | null;
+  refreshSession: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,26 +44,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const initializeAuth = () => {
     try {
-      // Check localStorage for user data directly
-      const userStr = localStorage.getItem('timebeacon_user');
-      const companyStr = localStorage.getItem('timebeacon_company');
+      // Use secure session manager
+      const session = sessionManager.getSession();
       
-      if (userStr && companyStr) {
-        const user = JSON.parse(userStr);
-        const company = JSON.parse(companyStr);
+      if (session && sessionManager.isSessionValid()) {
+        const permissions = authService.hasPermission ? 
+          authService.getUserPermissions?.(session.user.role, session.user.permissions || []) || [] :
+          session.user.permissions || [];
         
         setAuthState({
-          user,
-          company,
+          user: session.user,
+          company: session.company,
           isAuthenticated: true,
           isLoading: false,
-          permissions: user.permissions || [],
+          permissions,
         });
       } else {
+        // Clear invalid session
+        sessionManager.clearSession();
         setAuthState(prev => ({ ...prev, isLoading: false }));
       }
     } catch (error) {
       console.error('Auth initialization failed:', error);
+      sessionManager.clearSession();
       setAuthState(prev => ({ ...prev, isLoading: false }));
     }
   };
@@ -82,12 +87,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const response = await authService.login(loginRequest);
       
+      // Store session securely
+      sessionManager.setSession({
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        user: response.user,
+        company: response.company,
+        expiresIn: response.expiresIn,
+      });
+      
+      const permissions = authService.hasPermission ? 
+        authService.getUserPermissions?.(response.user.role, response.user.permissions || []) || [] :
+        response.user.permissions || [];
+      
       const newState: AuthState = {
         user: response.user,
         company: response.company,
         isAuthenticated: true,
         isLoading: false,
-        permissions: [...(response.user.permissions || [])],
+        permissions,
       };
       
       setAuthState(newState);
@@ -103,8 +121,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    authService.logout();
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+    
+    sessionManager.clearSession();
     setAuthState({
       user: null,
       company: null,
@@ -123,12 +147,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return authService.hasPermission(authState.permissions, resource, action, authState.user.id);
   };
 
+  const refreshSession = () => {
+    sessionManager.refreshActivity();
+  };
+
   const value: AuthContextType = {
     ...authState,
     login,
     logout,
     checkPermission,
     currentRoute,
+    refreshSession,
   };
 
   return (
