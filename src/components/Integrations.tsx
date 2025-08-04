@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Integration } from '../types';
-import { GmailAuth } from './GmailAuth';
+import { GoogleAuth } from './GoogleAuth';
 
 interface IntegrationsProps {
   integrations: Integration[];
@@ -195,7 +195,9 @@ export const Integrations: React.FC<IntegrationsProps> = ({ integrations, onTogg
   };
 
   const handleConnect = (integrationId: string) => {
-    if (integrationId === 'google-calendar' || integrationId === 'gmail') {
+    const googleServices = ['google-calendar', 'gmail', 'google-docs', 'google-sheets', 'google-slides'];
+    
+    if (googleServices.includes(integrationId)) {
       // Show setup modal for Google integrations
       setShowSetupModal(integrationId);
     } else {
@@ -375,15 +377,15 @@ export const Integrations: React.FC<IntegrationsProps> = ({ integrations, onTogg
               </button>
             </div>
             <div className="modal-body">
-              {showSetupModal === 'gmail' ? (
-                <GmailAuth
+              {showSetupModal && ['gmail', 'google-calendar', 'google-docs', 'google-sheets', 'google-slides'].includes(showSetupModal) ? (
+                <GoogleAuth
+                  service={showSetupModal.replace('google-', '') as 'gmail' | 'calendar' | 'docs' | 'sheets' | 'slides'}
                   onAuthSuccess={() => {
                     setShowSetupModal(null);
-                    // Update integration status
                   }}
                   onAuthError={(error) => {
-                    console.error('Gmail auth error:', error);
-                    alert('Failed to connect Gmail: ' + error);
+                    console.error('Google auth error:', error);
+                    alert('Failed to connect Google service: ' + error);
                   }}
                 />
               ) : (
