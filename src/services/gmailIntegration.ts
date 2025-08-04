@@ -20,16 +20,73 @@ interface GmailThread {
 
 export class GmailIntegrationService {
   private accessToken: string | null = null;
+  private refreshToken: string | null = null;
+  private readonly API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
   private readonly SCOPES = [
     'https://www.googleapis.com/auth/gmail.readonly',
     'https://www.googleapis.com/auth/gmail.metadata'
   ];
-  private demoMode: boolean = true; // Force demo mode for now
+  private demoMode: boolean = !process.env.REACT_APP_GOOGLE_CLIENT_ID; // Use real mode if client ID exists
 
   constructor() {
-    // Skip Google API loading in demo mode
-    if (!this.demoMode) {
-      this.loadGoogleAPI();
+    this.loadStoredTokens();
+  }
+
+  private loadStoredTokens(): void {
+    try {
+      const storedTokens = localStorage.getItem('gmail_tokens');
+      if (storedTokens) {
+        const tokens = JSON.parse(storedTokens);
+        this.accessToken = tokens.access_token;
+        this.refreshToken = tokens.refresh_token;
+        
+        // Check if token is expired
+        if (tokens.expiry_date && Date.now() > tokens.expiry_date) {
+          this.refreshAccessToken();
+        }
+      }
+    } catch (error) {
+      console.error('Error loading stored tokens:', error);
+    }
+  }
+
+  private async refreshAccessToken(): Promise<boolean> {
+    if (!this.refreshToken) return false;
+    
+    try {
+      const response = await fetch(`${this.API_BASE_URL}/auth/google/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          refresh_token: this.refreshToken
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        this.accessToken = data.tokens.access_token;
+        this.saveTokens({
+          access_token: data.tokens.access_token,
+          refresh_token: this.refreshToken,
+          expiry_date: data.tokens.expiry_date
+        });
+        return true;
+      }
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+    }
+    
+    return false;
+  }
+
+  private saveTokens(tokens: any): void {
+    try {
+      localStorage.setItem('gmail_tokens', JSON.stringify(tokens));
+    } catch (error) {
+      console.error('Error saving tokens:', error);
     }
   }
 
@@ -68,7 +125,7 @@ export class GmailIntegrationService {
 
   async authenticateGmail(): Promise<boolean> {
     try {
-      // Force demo mode for now
+      // Demo mode fallback
       if (this.demoMode) {
         console.log('Demo mode: Simulating Gmail authentication');
         this.accessToken = 'demo-token';
@@ -79,31 +136,62 @@ export class GmailIntegrationService {
         return true;
       }
 
-      const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || 'demo-client-id';
-      
-      // Demo mode fallback - simulate successful authentication
-      if (clientId === 'demo-client-id') {
-        console.log('Demo mode: Simulating Gmail authentication');
+      // Real OAuth flow using backend API
+      try {
+        // Get OAuth URL from backend
+        const urlResponse = await fetch(`${this.API_BASE_URL}/auth/google/url`);
+        const urlData = await urlResponse.json();
+        
+        if (!urlData.authUrl) {
+          throw new Error('Failed to get OAuth URL');
+        }
+        
+        // Open OAuth popup
+        const popup = window.open(
+          urlData.authUrl,
+          'gmail-oauth',
+          'width=500,height=600,scrollbars=yes,resizable=yes'
+        );
+        
+        // Wait for OAuth callback
+        return new Promise((resolve) => {
+          const checkClosed = setInterval(() => {
+            if (popup?.closed) {
+              clearInterval(checkClosed);
+              // Check if we got tokens from the callback
+              const tokens = localStorage.getItem('gmail_tokens');
+              if (tokens) {
+                const parsedTokens = JSON.parse(tokens);
+                this.accessToken = parsedTokens.access_token;
+                this.refreshToken = parsedTokens.refresh_token;
+                resolve(true);
+              } else {
+                resolve(false);
+              }
+            }
+          }, 1000);
+          
+          // Timeout after 5 minutes
+          setTimeout(() => {
+            clearInterval(checkClosed);
+            if (popup && !popup.closed) {
+              popup.close();
+            }
+            resolve(false);
+          }, 300000);
+        });
+        
+      } catch (apiError) {
+        console.error('API authentication failed, falling back to demo mode:', apiError);
+        // Fall back to demo mode
         this.accessToken = 'demo-token';
         localStorage.setItem('gmail_demo_token', 'demo-token');
         return true;
       }
-
-      // Real authentication
-      const authInstance = window.gapi.auth2.getAuthInstance();
-      if (!authInstance) {
-        throw new Error('Google Auth not initialized');
-      }
       
-      const user = await authInstance.signIn({
-        scope: this.SCOPES.join(' ')
-      });
-      
-      this.accessToken = user.getAuthResponse().access_token;
-      return true;
     } catch (error) {
       console.error('Gmail authentication failed:', error);
-      // Even if real auth fails, fall back to demo mode
+      // Final fallback to demo mode
       console.log('Falling back to demo mode due to auth failure');
       this.accessToken = 'demo-token';
       localStorage.setItem('gmail_demo_token', 'demo-token');
@@ -143,7 +231,7 @@ export class GmailIntegrationService {
     if (!this.accessToken) throw new Error('Not authenticated');
 
     // Demo mode - return mock data
-    if (this.accessToken === 'demo-token') {
+    if (this.accessToken === 'demo-token' || this.demoMode) {
       return [
         {
           id: 'demo1',
@@ -179,37 +267,34 @@ export class GmailIntegrationService {
     }
 
     try {
-      // Get list of message IDs
-      const listResponse = await fetch(
-        `https://www.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}&q=is:unread OR newer_than:7d`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.accessToken}`
-          }
-        }
+      // Use backend API to fetch Gmail messages
+      const response = await fetch(
+        `${this.API_BASE_URL}/gmail/messages?access_token=${this.accessToken}&maxResults=${maxResults}`
       );
 
-      const listData = await listResponse.json();
-      if (!listData.messages) return [];
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
 
-      // Get full message details
-      const messages = await Promise.all(
-        listData.messages.slice(0, 10).map(async (msg: { id: string }) => {
-          const msgResponse = await fetch(
-            `https://www.googleapis.com/gmail/v1/users/me/messages/${msg.id}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${this.accessToken}`
-              }
-            }
-          );
-          return msgResponse.json();
-        })
-      );
-
-      return messages;
+      const data = await response.json();
+      return data.messages || [];
+      
     } catch (error) {
       console.error('Failed to fetch emails:', error);
+      
+      // Try to refresh token and retry
+      if (await this.refreshAccessToken()) {
+        try {
+          const response = await fetch(
+            `${this.API_BASE_URL}/gmail/messages?access_token=${this.accessToken}&maxResults=${maxResults}`
+          );
+          const data = await response.json();
+          return data.messages || [];
+        } catch (retryError) {
+          console.error('Retry also failed:', retryError);
+        }
+      }
+      
       return [];
     }
   }
