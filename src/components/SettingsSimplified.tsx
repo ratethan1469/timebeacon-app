@@ -10,8 +10,16 @@ interface SettingsData {
   endTime: string;
   timezone: string;
   browserNotifications: boolean;
-  emailNotifications: boolean;
-  slackNotifications: boolean;
+  emailNotifications: {
+    enabled: boolean;
+    cadence: 'hourly' | 'daily' | 'weekly' | 'realtime';
+    time?: string; // For daily notifications
+  };
+  slackNotifications: {
+    enabled: boolean;
+    cadence: 'hourly' | 'daily' | 'weekly' | 'realtime';
+    channel?: string;
+  };
   autoBreaks: boolean;
 }
 
@@ -25,8 +33,16 @@ const defaultSettings: SettingsData = {
   endTime: '17:00',
   timezone: 'America/New_York',
   browserNotifications: false,
-  emailNotifications: false,
-  slackNotifications: false,
+  emailNotifications: {
+    enabled: false,
+    cadence: 'daily',
+    time: '17:00'
+  },
+  slackNotifications: {
+    enabled: false,
+    cadence: 'realtime',
+    channel: ''
+  },
   autoBreaks: false
 };
 
@@ -314,50 +330,166 @@ export const SettingsSimplified: React.FC = () => {
           Notifications
         </h2>
         
-        <label style={checkboxLabelStyle}>
-          <input
-            type="checkbox"
-            checked={settings.browserNotifications}
-            onChange={(e) => handleChange('browserNotifications', e.target.checked)}
-          />
-          <span>Browser Notifications</span>
-        </label>
+        {/* Browser Notifications */}
+        <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginBottom: '8px' }}>
+            <input
+              type="checkbox"
+              checked={settings.browserNotifications}
+              onChange={(e) => handleChange('browserNotifications', e.target.checked)}
+              style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }}
+            />
+            <div>
+              <div style={{ fontWeight: '600', color: '#374151' }}>Browser Notifications</div>
+              <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                Get notified in your browser for time tracking reminders
+              </div>
+            </div>
+          </label>
+        </div>
 
-        <label style={checkboxLabelStyle}>
-          <input
-            type="checkbox"
-            checked={settings.emailNotifications}
-            onChange={(e) => handleChange('emailNotifications', e.target.checked)}
-          />
-          <span>Email Notifications</span>
-        </label>
-
-        <label style={{
-          ...checkboxLabelStyle,
-          padding: '12px',
-          backgroundColor: settings.slackNotifications ? '#f0f9ff' : 'transparent',
-          borderRadius: '6px',
-          border: settings.slackNotifications ? '2px solid #3b82f6' : '2px solid transparent'
+        {/* Email Notifications */}
+        <div style={{ 
+          marginBottom: '24px', 
+          padding: '16px', 
+          backgroundColor: settings.emailNotifications.enabled ? '#f0f9ff' : '#f8fafc', 
+          borderRadius: '8px',
+          border: settings.emailNotifications.enabled ? '2px solid #3b82f6' : '1px solid #e2e8f0'
         }}>
-          <input
-            type="checkbox"
-            checked={settings.slackNotifications}
-            onChange={(e) => handleChange('slackNotifications', e.target.checked)}
-          />
-          <span>
-            Slack Notifications 
-            {settings.slackNotifications && <span style={{ color: '#3b82f6', marginLeft: '8px' }}>✓ Enabled</span>}
-          </span>
-        </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginBottom: '16px' }}>
+            <input
+              type="checkbox"
+              checked={settings.emailNotifications.enabled}
+              onChange={(e) => handleChange('emailNotifications', { ...settings.emailNotifications, enabled: e.target.checked })}
+              style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }}
+            />
+            <div>
+              <div style={{ fontWeight: '600', color: '#374151' }}>
+                Email Notifications
+                {settings.emailNotifications.enabled && <span style={{ color: '#3b82f6', marginLeft: '8px' }}>✓ Enabled</span>}
+              </div>
+              <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                Receive time tracking summaries and reminders via email
+              </div>
+            </div>
+          </label>
 
-        <label style={checkboxLabelStyle}>
-          <input
-            type="checkbox"
-            checked={settings.autoBreaks}
-            onChange={(e) => handleChange('autoBreaks', e.target.checked)}
-          />
-          <span>Auto Break Detection</span>
-        </label>
+          {settings.emailNotifications.enabled && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
+              <div>
+                <label style={labelStyle}>Notification Frequency</label>
+                <select
+                  value={settings.emailNotifications.cadence}
+                  onChange={(e) => handleChange('emailNotifications', { 
+                    ...settings.emailNotifications, 
+                    cadence: e.target.value as 'hourly' | 'daily' | 'weekly' | 'realtime'
+                  })}
+                  style={inputStyle}
+                >
+                  <option value="realtime">Real-time (immediate)</option>
+                  <option value="hourly">Every hour</option>
+                  <option value="daily">Daily digest</option>
+                  <option value="weekly">Weekly summary</option>
+                </select>
+              </div>
+              
+              {settings.emailNotifications.cadence === 'daily' && (
+                <div>
+                  <label style={labelStyle}>Daily Email Time</label>
+                  <input
+                    type="time"
+                    value={settings.emailNotifications.time || '17:00'}
+                    onChange={(e) => handleChange('emailNotifications', { 
+                      ...settings.emailNotifications, 
+                      time: e.target.value 
+                    })}
+                    style={inputStyle}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Slack Notifications */}
+        <div style={{ 
+          marginBottom: '24px', 
+          padding: '16px', 
+          backgroundColor: settings.slackNotifications.enabled ? '#f0f9ff' : '#f8fafc', 
+          borderRadius: '8px',
+          border: settings.slackNotifications.enabled ? '2px solid #3b82f6' : '1px solid #e2e8f0'
+        }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginBottom: '16px' }}>
+            <input
+              type="checkbox"
+              checked={settings.slackNotifications.enabled}
+              onChange={(e) => handleChange('slackNotifications', { ...settings.slackNotifications, enabled: e.target.checked })}
+              style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }}
+            />
+            <div>
+              <div style={{ fontWeight: '600', color: '#374151' }}>
+                Slack Notifications
+                {settings.slackNotifications.enabled && <span style={{ color: '#3b82f6', marginLeft: '8px' }}>✓ Enabled</span>}
+              </div>
+              <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                Send time tracking updates and reminders to your Slack workspace
+              </div>
+            </div>
+          </label>
+
+          {settings.slackNotifications.enabled && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
+              <div>
+                <label style={labelStyle}>Notification Frequency</label>
+                <select
+                  value={settings.slackNotifications.cadence}
+                  onChange={(e) => handleChange('slackNotifications', { 
+                    ...settings.slackNotifications, 
+                    cadence: e.target.value as 'hourly' | 'daily' | 'weekly' | 'realtime'
+                  })}
+                  style={inputStyle}
+                >
+                  <option value="realtime">Real-time updates</option>
+                  <option value="hourly">Hourly summaries</option>
+                  <option value="daily">Daily reports</option>
+                  <option value="weekly">Weekly summaries</option>
+                </select>
+              </div>
+              
+              <div>
+                <label style={labelStyle}>Slack Channel (optional)</label>
+                <input
+                  type="text"
+                  value={settings.slackNotifications.channel || ''}
+                  onChange={(e) => handleChange('slackNotifications', { 
+                    ...settings.slackNotifications, 
+                    channel: e.target.value 
+                  })}
+                  placeholder="#timebeacon or @username"
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Auto Breaks */}
+        <div style={{ marginBottom: '0', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={settings.autoBreaks}
+              onChange={(e) => handleChange('autoBreaks', e.target.checked)}
+              style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }}
+            />
+            <div>
+              <div style={{ fontWeight: '600', color: '#374151' }}>Automatic Break Detection</div>
+              <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                Automatically detect and suggest breaks during long work sessions
+              </div>
+            </div>
+          </label>
+        </div>
       </div>
 
       {/* Export */}
