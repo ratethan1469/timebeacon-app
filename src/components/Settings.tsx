@@ -4,7 +4,7 @@ import { MultiSelect } from './MultiSelect';
 import { projectTemplates, ProjectTemplate } from '../data/projectTemplates';
 import PermissionsManager from './PermissionsManager';
 import { useAuth } from '../contexts/AuthContext';
-import { useTimeTrackerDB } from '../hooks/useTimeTrackerDB';
+import { useTimeTracker } from '../hooks/useTimeTracker';
 
 interface SettingsProps {
   // Keep for compatibility, but we'll use the DB hook internally
@@ -19,89 +19,20 @@ interface SettingsProps {
 export const Settings: React.FC<SettingsProps> = (props) => {
   const { checkPermission } = useAuth();
   const {
-    state,
-    setSettings,
+    settings,
+    projects,
+    updateSettings,
     addProject,
     updateProject,
-    deleteProject,
-    exportTimeEntriesToCSV,
-    exportTimeEntriesToPDF
-  } = useTimeTrackerDB();
+    deleteProject
+  } = useTimeTracker();
   
-  // Add safety checks for state initialization
-  const settings = state?.settings;
-  const projects = state?.projects || [];
-  
-  // Add timeout for loading state - if it takes too long, show fallback
-  const [showLoadingTimeout, setShowLoadingTimeout] = useState(false);
-  
-  useEffect(() => {
-    if (!settings) {
-      const timer = setTimeout(() => {
-        setShowLoadingTimeout(true);
-      }, 5000); // Show timeout message after 5 seconds
-      
-      return () => clearTimeout(timer);
-    }
-  }, [settings]);
-
-  // Show loading state while data is being fetched
+  // Settings should always be available with useTimeTracker
   if (!settings) {
-    return (
-      <div>
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-        <div className="dashboard-header">
-          <h1 className="dashboard-title">Settings</h1>
-          <p className="dashboard-subtitle">
-            {showLoadingTimeout ? 'Having trouble loading? The backend may be starting up.' : 'Loading your preferences...'}
-          </p>
-        </div>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '200px' 
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            {!showLoadingTimeout ? (
-              <>
-                <div style={{ 
-                  width: '40px', 
-                  height: '40px', 
-                  border: '4px solid #f3f4f6', 
-                  borderTop: '4px solid #3b82f6', 
-                  borderRadius: '50%', 
-                  animation: 'spin 1s linear infinite',
-                  margin: '0 auto 16px'
-                }} />
-                <p style={{ color: 'var(--gray-600)' }}>Loading settings...</p>
-              </>
-            ) : (
-              <>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
-                <h3 style={{ color: 'var(--gray-700)', margin: '0 0 8px 0' }}>Backend Starting Up</h3>
-                <p style={{ color: 'var(--gray-600)', margin: '0 0 16px 0', maxWidth: '400px' }}>
-                  The backend service is initializing. This can take 1-2 minutes on the free tier.
-                </p>
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="btn btn-primary"
-                  style={{ padding: '8px 16px' }}
-                >
-                  Refresh Page
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    );
+    console.error('Settings not loaded from useTimeTracker');
+    return <div>Error loading settings. Please refresh the page.</div>;
   }
+  
   const [activeTab, setActiveTab] = useState<'general' | 'permissions'>('general');
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -144,7 +75,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
         }
       };
       
-      await setSettings(updatedSettings);
+      updateSettings(updatedSettings);
       setSaveStatus('saved');
       
       // Clear saved status after 2 seconds
@@ -253,9 +184,13 @@ export const Settings: React.FC<SettingsProps> = (props) => {
   const handleExportToCSV = async () => {
     try {
       setIsLoading(true);
-      const csvData = await exportTimeEntriesToCSV();
+      // Temporary placeholder - will implement real export later
+      const timeEntries = JSON.parse(localStorage.getItem('timebeacon_entries_v6') || '[]');
+      const csvData = 'Date,Start,End,Duration,Project,Client,Description\n' + 
+        timeEntries.map(entry => 
+          `${entry.date},${entry.startTime},${entry.endTime},${entry.duration},${entry.project},${entry.client},"${entry.description}"`
+        ).join('\n');
       
-      // Create and download the CSV file
       const blob = new Blob([csvData], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -277,16 +212,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
   };
 
   const handleExportToPDF = async () => {
-    try {
-      setIsLoading(true);
-      await exportTimeEntriesToPDF();
-      alert('PDF report generated and downloaded!');
-    } catch (error) {
-      console.error('Failed to export PDF:', error);
-      alert('Failed to generate PDF. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+    alert('PDF export coming soon! For now, use the CSV export.');
   };
 
   return (
