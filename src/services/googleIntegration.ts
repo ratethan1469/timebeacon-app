@@ -24,8 +24,8 @@ export interface CalendarEvent {
 export class GoogleIntegrationService {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
-  private readonly API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-  private demoMode: boolean = !process.env.REACT_APP_GOOGLE_CLIENT_ID;
+  private readonly API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  private demoMode: boolean = !import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   constructor() {
     this.loadStoredTokens();

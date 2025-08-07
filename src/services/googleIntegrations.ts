@@ -43,9 +43,9 @@ class GoogleIntegrationsService {
 
   constructor() {
     this.config = {
-      clientId: import.meta.env.REACT_APP_GOOGLE_CLIENT_ID || 'demo-client-id',
-      clientSecret: import.meta.env.REACT_APP_GOOGLE_CLIENT_SECRET || 'demo-secret',
-      redirectUri: `${import.meta.env.REACT_APP_API_URL || 'http://localhost:3001'}/auth/google/callback`,
+      clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'demo-client-id',
+      clientSecret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET || 'demo-secret',
+      redirectUri: `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/auth/google/callback`,
       scopes: [
         'https://www.googleapis.com/auth/userinfo.email',
         'https://www.googleapis.com/auth/userinfo.profile',
@@ -82,7 +82,7 @@ class GoogleIntegrationsService {
 
       try {
         // Get OAuth URL from backend
-        const apiUrl = import.meta.env.REACT_APP_API_URL || 'http://localhost:3001';
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
         const response = await fetch(`${apiUrl}/auth/google/url`);
         const data = await response.json();
         
