@@ -17,8 +17,6 @@ const getDayOfWeek = (date: string) => {
   const dateObj = new Date(date + 'T00:00:00'); // Force consistent parsing
   const jsDay = dateObj.getDay(); // 0=Sunday, 1=Monday, etc.
   
-  console.log(`🔍 getDayOfWeek debug: ${date} -> JS day ${jsDay}`);
-  
   // Map JavaScript days to workweek days
   // JS: Sun=0, Mon=1, Tue=2, Wed=3, Thu=4, Fri=5, Sat=6
   // We want: Mon=0, Tue=1, Wed=2, Thu=3, Fri=4
@@ -31,14 +29,13 @@ const getDayOfWeek = (date: string) => {
   };
   
   const workDay = workDayMap[jsDay];
-  const result = workDay !== undefined ? dayNames[workDay] : null;
-  console.log(`🔍 Mapped to: ${result} (workDay index: ${workDay})`);
-  return result;
+  return workDay !== undefined ? dayNames[workDay] : null;
 };
 
 const getWeekDates = (currentDate: Date) => {
   const week = [];
   const current = new Date(currentDate);
+  current.setHours(0, 0, 0, 0); // Reset time to avoid timezone issues
   const jsDay = current.getDay();
   
   // Calculate days to go back to Monday
@@ -53,11 +50,15 @@ const getWeekDates = (currentDate: Date) => {
   const monday = new Date(current);
   monday.setDate(current.getDate() - daysToMonday);
   
-  // Generate Monday through Friday
+  // Generate Monday through Friday using local date formatting to avoid timezone issues
   for (let i = 0; i < 5; i++) {
     const date = new Date(monday);
     date.setDate(monday.getDate() + i);
-    week.push(date.toISOString().split('T')[0]);
+    // Use local date formatting to avoid timezone issues
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    week.push(`${year}-${month}-${day}`);
   }
   
   return week;
@@ -127,13 +128,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const { getEventsForDate } = useCalendarEvents();
   
   const weekDates = getWeekDates(currentWeek);
-  console.log('🗓️ WEEK DATES DEBUG:', weekDates);
-  weekDates.forEach((date, index) => {
-    const dayName = getDayOfWeek(date);
-    const dateObj = new Date(date);
-    const jsDay = dateObj.getDay(); // 0=Sunday, 1=Monday, etc.
-    console.log(`Index ${index}: ${date} -> ${dayName} (JS day: ${jsDay})`);
-  });
   
   
   const navigateWeek = (direction: 'prev' | 'next') => {
