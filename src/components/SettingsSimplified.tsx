@@ -20,6 +20,7 @@ interface SettingsData {
     enabled: boolean;
     cadence: 'hourly' | 'daily' | 'weekly' | 'realtime';
     channel?: string;
+    dailyTime?: string;
     weeklyDay?: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
     weeklyTime?: string;
   };
@@ -46,6 +47,7 @@ const defaultSettings: SettingsData = {
     enabled: false,
     cadence: 'realtime',
     channel: '',
+    dailyTime: '17:00',
     weeklyDay: 'friday',
     weeklyTime: '09:00'
   },
@@ -539,6 +541,24 @@ export const SettingsSimplified: React.FC = () => {
                 </div>
               </div>
               
+              {settings.slackNotifications.cadence === 'daily' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={labelStyle}>Daily Slack Time</label>
+                    <input
+                      type="time"
+                      value={settings.slackNotifications.dailyTime || '17:00'}
+                      onChange={(e) => handleChange('slackNotifications', { 
+                        ...settings.slackNotifications, 
+                        dailyTime: e.target.value 
+                      })}
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div></div> {/* Empty div for grid alignment */}
+                </div>
+              )}
+
               {settings.slackNotifications.cadence === 'weekly' && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
