@@ -1,34 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Settings as SettingsType, Project } from '../types';
 import { MultiSelect } from './MultiSelect';
 import { projectTemplates, ProjectTemplate } from '../data/projectTemplates';
 import PermissionsManager from './PermissionsManager';
 import { useAuth } from '../contexts/AuthContext';
-import { useTimeTrackerDB } from '../hooks/useTimeTrackerDB';
 
 interface SettingsProps {
-  // Keep for compatibility, but we'll use the DB hook internally
-  settings?: SettingsType;
-  projects?: Project[];
-  onUpdateSettings?: (settings: SettingsType) => void;
-  onAddProject?: (project: Omit<Project, 'id' | 'createdAt'>) => Project;
-  onUpdateProject?: (id: string, updates: Partial<Project>) => void;
-  onDeleteProject?: (id: string) => void;
+  settings: SettingsType;
+  projects: Project[];
+  onUpdateSettings: (settings: SettingsType) => void;
+  onAddProject: (project: Omit<Project, 'id' | 'createdAt'>) => Project;
+  onUpdateProject: (id: string, updates: Partial<Project>) => void;
+  onDeleteProject: (id: string) => void;
 }
 
-export const Settings: React.FC<SettingsProps> = (props) => {
+export const Settings: React.FC<SettingsProps> = ({
+  settings,
+  projects,
+  onUpdateSettings,
+  onAddProject,
+  onUpdateProject,
+  onDeleteProject,
+}) => {
   const { checkPermission } = useAuth();
-  const {
-    state,
-    setSettings,
-    addProject,
-    updateProject,
-    deleteProject,
-    exportTimeEntriesToCSV,
-    exportTimeEntriesToPDF
-  } = useTimeTrackerDB();
-  
-  const { settings, projects } = state;
   const [activeTab, setActiveTab] = useState<'general' | 'permissions'>('general');
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -47,40 +41,8 @@ export const Settings: React.FC<SettingsProps> = (props) => {
     startDate: new Date().toISOString().split('T')[0]
   });
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  
-  const handleSettingsChange = async (updates: Partial<SettingsType>) => {
-    try {
-      setSaveStatus('saving');
-      const updatedSettings = {
-        ...settings,
-        ...updates,
-        // Ensure nested objects are properly merged
-        profile: {
-          ...settings.profile,
-          ...(updates.profile || {})
-        },
-        workingHours: {
-          ...settings.workingHours,
-          ...(updates.workingHours || {})
-        },
-        emailNotifications: {
-          ...settings.emailNotifications,
-          ...(updates.emailNotifications || {})
-        }
-      };
-      
-      await setSettings(updatedSettings);
-      setSaveStatus('saved');
-      
-      // Clear saved status after 2 seconds
-      setTimeout(() => setSaveStatus('idle'), 2000);
-    } catch (error) {
-      console.error('Failed to save settings:', error);
-      setSaveStatus('error');
-      setTimeout(() => setSaveStatus('idle'), 3000);
-    }
+  const handleSettingsChange = (updates: Partial<SettingsType>) => {
+    onUpdateSettings({ ...settings, ...updates });
   };
 
   // Ensure emailNotifications is always defined with defaults
@@ -95,36 +57,28 @@ export const Settings: React.FC<SettingsProps> = (props) => {
   // Ensure defaultProjects is an array
   const safeDefaultProjects = Array.isArray(settings.defaultProjects) ? settings.defaultProjects : [];
 
-  const handleProjectSubmit = async (e: React.FormEvent) => {
+  const handleProjectSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      setIsLoading(true);
-      if (editingProject) {
-        await updateProject(editingProject.id, projectForm);
-        setEditingProject(null);
-      } else {
-        await addProject(projectForm);
-      }
-      setProjectForm({
-        name: '',
-        client: '',
-        description: '',
-        rate: 0,
-        color: '#3b82f6',
-        active: true,
-        billable: true,
-        clientId: '',
-        category: 'implementation',
-        status: 'planning',
-        startDate: new Date().toISOString().split('T')[0]
-      });
-      setShowProjectForm(false);
-    } catch (error) {
-      console.error('Failed to save project:', error);
-      alert('Failed to save project. Please try again.');
-    } finally {
-      setIsLoading(false);
+    if (editingProject) {
+      onUpdateProject(editingProject.id, projectForm);
+      setEditingProject(null);
+    } else {
+      onAddProject(projectForm);
     }
+    setProjectForm({
+      name: '',
+      client: '',
+      description: '',
+      rate: 0,
+      color: '#3b82f6',
+      active: true,
+      billable: true,
+      clientId: '',
+      category: 'implementation',
+      status: 'planning',
+      startDate: new Date().toISOString().split('T')[0]
+    });
+    setShowProjectForm(false);
   };
 
   const handleEditProject = (project: Project) => {
@@ -145,20 +99,6 @@ export const Settings: React.FC<SettingsProps> = (props) => {
     setShowProjectForm(true);
   };
 
-  const handleDeleteProject = async (projectId: string) => {
-    if (window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
-      try {
-        setIsLoading(true);
-        await deleteProject(projectId);
-      } catch (error) {
-        console.error('Failed to delete project:', error);
-        alert('Failed to delete project. Please try again.');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
-
   const handleUseTemplate = (template: ProjectTemplate) => {
     setProjectForm({
       name: template.name,
@@ -177,43 +117,14 @@ export const Settings: React.FC<SettingsProps> = (props) => {
     setShowProjectForm(true);
   };
 
-  const handleExportToCSV = async () => {
-    try {
-      setIsLoading(true);
-      const csvData = await exportTimeEntriesToCSV();
-      
-      // Create and download the CSV file
-      const blob = new Blob([csvData], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `timebeacon-export-${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      alert('CSV exported successfully!');
-    } catch (error) {
-      console.error('Failed to export CSV:', error);
-      alert('Failed to export CSV. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+  const exportToCSV = () => {
+    // This would implement CSV export functionality
+    alert('CSV export feature would be implemented here');
   };
 
-  const handleExportToPDF = async () => {
-    try {
-      setIsLoading(true);
-      await exportTimeEntriesToPDF();
-      alert('PDF report generated and downloaded!');
-    } catch (error) {
-      console.error('Failed to export PDF:', error);
-      alert('Failed to generate PDF. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+  const exportToPDF = () => {
+    // This would implement PDF export functionality
+    alert('PDF export feature would be implemented here');
   };
 
   return (
@@ -221,28 +132,6 @@ export const Settings: React.FC<SettingsProps> = (props) => {
       <div className="dashboard-header">
         <h1 className="dashboard-title">Settings</h1>
         <p className="dashboard-subtitle">Configure your TimeBeacon preferences</p>
-        
-        {/* Save Status Indicator */}
-        {saveStatus !== 'idle' && (
-          <div className={`settings-status ${saveStatus}`} style={{
-            position: 'fixed',
-            top: '20px',
-            right: '20px',
-            padding: '12px 20px',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: '500',
-            zIndex: 1000,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            backgroundColor: saveStatus === 'saved' ? '#10b981' : 
-                            saveStatus === 'error' ? '#ef4444' : '#3b82f6',
-            color: 'white'
-          }}>
-            {saveStatus === 'saving' && '💾 Saving...'}
-            {saveStatus === 'saved' && '✅ Settings saved!'}
-            {saveStatus === 'error' && '❌ Save failed'}
-          </div>
-        )}
       </div>
 
       {/* Tab Navigation */}
@@ -565,8 +454,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                   alignItems: 'center',
                   gap: '8px'
                 }}
-                onClick={handleExportToCSV}
-                disabled={isLoading}
+                onClick={exportToCSV}
               >
                 <div style={{ fontSize: '32px' }}>📊</div>
                 <div style={{ fontWeight: '600' }}>Export to CSV</div>
@@ -585,8 +473,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                   alignItems: 'center',
                   gap: '8px'
                 }}
-                onClick={handleExportToPDF}
-                disabled={isLoading}
+                onClick={exportToPDF}
               >
                 <div style={{ fontSize: '32px' }}>📄</div>
                 <div style={{ fontWeight: '600' }}>Generate PDF Report</div>
@@ -605,7 +492,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                   alignItems: 'center',
                   gap: '8px'
                 }}
-                onClick={() => window.location.href = '/integrations'}
+                onClick={() => alert('Integration features would be implemented here')}
               >
                 <div style={{ fontSize: '32px' }}>🔗</div>
                 <div style={{ fontWeight: '600' }}>Integrations</div>
@@ -616,388 +503,6 @@ export const Settings: React.FC<SettingsProps> = (props) => {
             </div>
           </div>
         </div>
-
-        {/* Project Management */}
-        <div className="content-card">
-          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h2 className="card-title">Project Management</h2>
-              <p style={{ color: 'var(--gray-600)', fontSize: '14px', margin: '4px 0 0 0' }}>
-                Manage your projects and time tracking templates
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
-                className="btn btn-secondary"
-                onClick={() => setShowTemplates(true)}
-                disabled={isLoading}
-              >
-                📋 Use Template
-              </button>
-              <button 
-                className="btn btn-primary"
-                onClick={() => setShowProjectForm(true)}
-                disabled={isLoading}
-              >
-                ➕ Add Project
-              </button>
-            </div>
-          </div>
-          <div style={{ padding: '24px' }}>
-            {projects.length === 0 ? (
-              <div style={{ 
-                textAlign: 'center', 
-                padding: '40px 20px',
-                color: 'var(--gray-600)'
-              }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📁</div>
-                <h3 style={{ margin: '0 0 8px 0' }}>No Projects Yet</h3>
-                <p style={{ margin: '0 0 20px 0' }}>Create your first project to start tracking time more efficiently.</p>
-                <button 
-                  className="btn btn-primary"
-                  onClick={() => setShowProjectForm(true)}
-                >
-                  Create First Project
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gap: '16px' }}>
-                {projects.map(project => (
-                  <div 
-                    key={project.id} 
-                    style={{
-                      border: '1px solid var(--gray-200)',
-                      borderRadius: '8px',
-                      padding: '20px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <div 
-                        style={{
-                          width: '12px',
-                          height: '12px',
-                          borderRadius: '50%',
-                          backgroundColor: project.color
-                        }}
-                      />
-                      <div>
-                        <h4 style={{ margin: '0 0 4px 0', fontWeight: '600' }}>{project.name}</h4>
-                        <p style={{ margin: '0', color: 'var(--gray-600)', fontSize: '14px' }}>
-                          {project.client} • {project.category} • {project.billable ? 'Billable' : 'Non-billable'}
-                          {project.rate && ` • $${project.rate}/hr`}
-                        </p>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <span 
-                        className={`status-badge ${project.active ? 'active' : 'inactive'}`}
-                        style={{
-                          padding: '4px 12px',
-                          borderRadius: '20px',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          backgroundColor: project.active ? '#dcfce7' : '#f3f4f6',
-                          color: project.active ? '#166534' : '#6b7280'
-                        }}
-                      >
-                        {project.active ? 'Active' : 'Inactive'}
-                      </span>
-                      <button 
-                        className="btn btn-sm btn-secondary"
-                        onClick={() => handleEditProject(project)}
-                        disabled={isLoading}
-                        style={{ padding: '6px 12px', fontSize: '12px' }}
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        className="btn btn-sm btn-danger"
-                        onClick={() => handleDeleteProject(project.id)}
-                        disabled={isLoading}
-                        style={{ 
-                          padding: '6px 12px', 
-                          fontSize: '12px',
-                          backgroundColor: '#fee2e2',
-                          color: '#dc2626',
-                          border: '1px solid #fca5a5'
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-        </div>
-      )}
-
-      {/* Project Form Modal */}
-      {showProjectForm && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            padding: '24px',
-            width: '90%',
-            maxWidth: '500px',
-            maxHeight: '90vh',
-            overflow: 'auto'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
-                {editingProject ? 'Edit Project' : 'Add New Project'}
-              </h3>
-              <button 
-                onClick={() => {
-                  setShowProjectForm(false);
-                  setEditingProject(null);
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '24px',
-                  cursor: 'pointer',
-                  color: 'var(--gray-500)'
-                }}
-              >
-                ×
-              </button>
-            </div>
-            
-            <form onSubmit={handleProjectSubmit} style={{ display: 'grid', gap: '16px' }}>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Project Name</label>
-                  <input
-                    type="text"
-                    value={projectForm.name}
-                    onChange={(e) => setProjectForm({...projectForm, name: e.target.value})}
-                    className="form-input"
-                    placeholder="Enter project name"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Client</label>
-                  <input
-                    type="text"
-                    value={projectForm.client}
-                    onChange={(e) => setProjectForm({...projectForm, client: e.target.value})}
-                    className="form-input"
-                    placeholder="Enter client name"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  value={projectForm.description}
-                  onChange={(e) => setProjectForm({...projectForm, description: e.target.value})}
-                  className="form-input"
-                  placeholder="Project description (optional)"
-                  rows={3}
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Hourly Rate</label>
-                  <input
-                    type="number"
-                    value={projectForm.rate}
-                    onChange={(e) => setProjectForm({...projectForm, rate: Number(e.target.value)})}
-                    className="form-input"
-                    placeholder="0"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Project Color</label>
-                  <input
-                    type="color"
-                    value={projectForm.color}
-                    onChange={(e) => setProjectForm({...projectForm, color: e.target.value})}
-                    className="form-input"
-                    style={{ height: '42px' }}
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Category</label>
-                  <select
-                    value={projectForm.category}
-                    onChange={(e) => setProjectForm({...projectForm, category: e.target.value as Project['category']})}
-                    className="form-input"
-                  >
-                    <option value="implementation">Implementation</option>
-                    <option value="ongoing-support">Ongoing Support</option>
-                    <option value="training">Training</option>
-                    <option value="consulting">Consulting</option>
-                    <option value="escalation">Escalation</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Status</label>
-                  <select
-                    value={projectForm.status}
-                    onChange={(e) => setProjectForm({...projectForm, status: e.target.value as Project['status']})}
-                    className="form-input"
-                  >
-                    <option value="planning">Planning</option>
-                    <option value="active">Active</option>
-                    <option value="on-hold">On Hold</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <input
-                    type="checkbox"
-                    checked={projectForm.active}
-                    onChange={(e) => setProjectForm({...projectForm, active: e.target.checked})}
-                  />
-                  <span>Active Project</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <input
-                    type="checkbox"
-                    checked={projectForm.billable}
-                    onChange={(e) => setProjectForm({...projectForm, billable: e.target.checked})}
-                  />
-                  <span>Billable</span>
-                </label>
-              </div>
-
-              <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-                <button 
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setShowProjectForm(false);
-                    setEditingProject(null);
-                  }}
-                  disabled={isLoading}
-                  style={{ flex: 1 }}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={isLoading}
-                  style={{ flex: 1 }}
-                >
-                  {isLoading ? 'Saving...' : editingProject ? 'Update Project' : 'Create Project'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Templates Modal */}
-      {showTemplates && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            padding: '24px',
-            width: '90%',
-            maxWidth: '800px',
-            maxHeight: '90vh',
-            overflow: 'auto'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
-                Choose Project Template
-              </h3>
-              <button 
-                onClick={() => setShowTemplates(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '24px',
-                  cursor: 'pointer',
-                  color: 'var(--gray-500)'
-                }}
-              >
-                ×
-              </button>
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-              {projectTemplates.map(template => (
-                <div 
-                  key={template.id}
-                  style={{
-                    border: '1px solid var(--gray-200)',
-                    borderRadius: '8px',
-                    padding: '20px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    ':hover': {
-                      borderColor: 'var(--primary-color)',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                    }
-                  }}
-                  onClick={() => handleUseTemplate(template)}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                    <div 
-                      style={{
-                        width: '12px',
-                        height: '12px',
-                        borderRadius: '50%',
-                        backgroundColor: template.color
-                      }}
-                    />
-                    <h4 style={{ margin: 0, fontWeight: '600' }}>{template.name}</h4>
-                  </div>
-                  <p style={{ margin: '0 0 12px 0', color: 'var(--gray-600)', fontSize: '14px' }}>
-                    {template.description}
-                  </p>
-                  <div style={{ fontSize: '12px', color: 'var(--gray-500)' }}>
-                    {template.client} • ${template.estimatedRate}/hr • {template.category}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       )}
     </div>
