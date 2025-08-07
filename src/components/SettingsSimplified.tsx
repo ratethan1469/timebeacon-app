@@ -58,7 +58,19 @@ export const SettingsSimplified: React.FC = () => {
       const saved = localStorage.getItem('timebeacon_settings_simplified');
       if (saved) {
         const parsed = JSON.parse(saved);
-        const loadedSettings = { ...defaultSettings, ...parsed };
+        const loadedSettings = {
+          ...defaultSettings,
+          ...parsed,
+          // Ensure nested objects are properly merged
+          emailNotifications: {
+            ...defaultSettings.emailNotifications,
+            ...(parsed.emailNotifications || {})
+          },
+          slackNotifications: {
+            ...defaultSettings.slackNotifications,
+            ...(parsed.slackNotifications || {})
+          }
+        };
         setSettings(loadedSettings);
         setOriginalSettings(loadedSettings);
       }
@@ -85,7 +97,7 @@ export const SettingsSimplified: React.FC = () => {
   };
 
   // Handle input changes (no auto-save)
-  const handleChange = (field: keyof SettingsData, value: string | boolean) => {
+  const handleChange = (field: keyof SettingsData, value: any) => {
     const newSettings = { ...settings, [field]: value };
     setSettings(newSettings);
     setHasChanges(JSON.stringify(newSettings) !== JSON.stringify(originalSettings));
