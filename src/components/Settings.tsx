@@ -46,11 +46,8 @@ export const Settings: React.FC<SettingsProps> = ({
   
   // Sync localSettings when settings prop changes
   useEffect(() => {
-    if (settings && (!localSettings || JSON.stringify(settings) !== JSON.stringify(localSettings))) {
-      setLocalSettings(settings);
-      console.log('🔄 Syncing settings to local state:', settings);
-    }
-  }, [settings, localSettings]);
+    setLocalSettings(settings);
+  }, [settings]);
   
   const handleSettingsChange = (updates: Partial<SettingsType>) => {
     try {
@@ -253,12 +250,8 @@ export const Settings: React.FC<SettingsProps> = ({
                   type="text"
                   value={localSettings.profile?.name || ''}
                   onChange={(e) => {
-                    const newValue = e.target.value;
-                    const updatedProfile = { ...(localSettings.profile || {}), name: newValue };
-                    const newSettings = { ...localSettings, profile: updatedProfile };
-                    setLocalSettings(newSettings);
+                    const updatedProfile = { ...(localSettings.profile || {}), name: e.target.value };
                     handleSettingsChange({ profile: updatedProfile });
-                    console.log('👤 Name field updated to:', newValue);
                   }}
                   className="form-input"
                   placeholder="Enter your full name"
@@ -270,10 +263,7 @@ export const Settings: React.FC<SettingsProps> = ({
                   type="email"
                   value={localSettings.profile?.email || ''}
                   onChange={(e) => {
-                    const newValue = e.target.value;
-                    const updatedProfile = { ...(localSettings.profile || {}), email: newValue };
-                    const newSettings = { ...localSettings, profile: updatedProfile };
-                    setLocalSettings(newSettings);
+                    const updatedProfile = { ...(localSettings.profile || {}), email: e.target.value };
                     handleSettingsChange({ profile: updatedProfile });
                   }}
                   className="form-input"
@@ -288,10 +278,7 @@ export const Settings: React.FC<SettingsProps> = ({
                   type="text"
                   value={localSettings.profile?.company || ''}
                   onChange={(e) => {
-                    const newValue = e.target.value;
-                    const updatedProfile = { ...(localSettings.profile || {}), company: newValue };
-                    const newSettings = { ...localSettings, profile: updatedProfile };
-                    setLocalSettings(newSettings);
+                    const updatedProfile = { ...(localSettings.profile || {}), company: e.target.value };
                     handleSettingsChange({ profile: updatedProfile });
                   }}
                   className="form-input"
@@ -304,10 +291,7 @@ export const Settings: React.FC<SettingsProps> = ({
                   type="text"
                   value={localSettings.profile?.jobTitle || ''}
                   onChange={(e) => {
-                    const newValue = e.target.value;
-                    const updatedProfile = { ...(localSettings.profile || {}), jobTitle: newValue };
-                    const newSettings = { ...localSettings, profile: updatedProfile };
-                    setLocalSettings(newSettings);
+                    const updatedProfile = { ...(localSettings.profile || {}), jobTitle: e.target.value };
                     handleSettingsChange({ profile: updatedProfile });
                   }}
                   className="form-input"
@@ -321,10 +305,7 @@ export const Settings: React.FC<SettingsProps> = ({
                 type="tel"
                 value={localSettings.profile?.phone || ''}
                 onChange={(e) => {
-                  const newValue = e.target.value;
-                  const updatedProfile = { ...(localSettings.profile || {}), phone: newValue };
-                  const newSettings = { ...localSettings, profile: updatedProfile };
-                  setLocalSettings(newSettings);
+                  const updatedProfile = { ...(localSettings.profile || {}), phone: e.target.value };
                   handleSettingsChange({ profile: updatedProfile });
                 }}
                 className="form-input"
