@@ -42,7 +42,14 @@ export const Settings: React.FC<SettingsProps> = ({
   });
 
   const handleSettingsChange = (updates: Partial<SettingsType>) => {
-    onUpdateSettings({ ...settings, ...updates });
+    try {
+      const updatedSettings = { ...settings, ...updates };
+      onUpdateSettings(updatedSettings);
+      console.log('Settings updated:', updates);
+    } catch (error) {
+      console.error('Failed to update settings:', error);
+      alert('Failed to save settings. Please try again.');
+    }
   };
 
   // Ensure emailNotifications is always defined with defaults
@@ -59,26 +66,33 @@ export const Settings: React.FC<SettingsProps> = ({
 
   const handleProjectSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingProject) {
-      onUpdateProject(editingProject.id, projectForm);
-      setEditingProject(null);
-    } else {
-      onAddProject(projectForm);
+    try {
+      if (editingProject) {
+        onUpdateProject(editingProject.id, projectForm);
+        setEditingProject(null);
+        console.log('Project updated:', projectForm.name);
+      } else {
+        const newProject = onAddProject(projectForm);
+        console.log('Project added:', newProject.name);
+      }
+      setProjectForm({
+        name: '',
+        client: '',
+        description: '',
+        rate: 0,
+        color: '#3b82f6',
+        active: true,
+        billable: true,
+        clientId: '',
+        category: 'implementation',
+        status: 'planning',
+        startDate: new Date().toISOString().split('T')[0]
+      });
+      setShowProjectForm(false);
+    } catch (error) {
+      console.error('Failed to save project:', error);
+      alert('Failed to save project. Please try again.');
     }
-    setProjectForm({
-      name: '',
-      client: '',
-      description: '',
-      rate: 0,
-      color: '#3b82f6',
-      active: true,
-      billable: true,
-      clientId: '',
-      category: 'implementation',
-      status: 'planning',
-      startDate: new Date().toISOString().split('T')[0]
-    });
-    setShowProjectForm(false);
   };
 
   const handleEditProject = (project: Project) => {
@@ -121,13 +135,13 @@ export const Settings: React.FC<SettingsProps> = ({
     try {
       const timeEntries = JSON.parse(localStorage.getItem('timebeacon_entries_v6') || '[]');
       if (timeEntries.length === 0) {
-        alert('No time entries found to export.');
+        alert('No time entries found to export. Start tracking time first!');
         return;
       }
       
-      const csvData = 'Date,Start Time,End Time,Duration (hrs),Project,Client,Description,Billable\n' + 
+      const csvData = 'Date,Start Time,End Time,Duration (hrs),Project,Client,Description,Billable,Status\n' + 
         timeEntries.map(entry => 
-          `"${entry.date}","${entry.startTime}","${entry.endTime}",${entry.duration},"${entry.project}","${entry.client}","${entry.description}",${entry.billable ? 'Yes' : 'No'}`
+          `"${entry.date}","${entry.startTime}","${entry.endTime}",${entry.duration},"${entry.project}","${entry.client}","${entry.description}",${entry.billable ? 'Yes' : 'No'},"${entry.status || 'completed'}"`
         ).join('\n');
       
       const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
@@ -139,6 +153,9 @@ export const Settings: React.FC<SettingsProps> = ({
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      console.log(`Successfully exported ${timeEntries.length} time entries`);
+      alert(`Successfully exported ${timeEntries.length} time entries!`);
     } catch (error) {
       console.error('Export failed:', error);
       alert('Export failed. Please try again.');
@@ -220,9 +237,10 @@ export const Settings: React.FC<SettingsProps> = ({
                 <input
                   type="text"
                   value={settings.profile?.name || ''}
-                  onChange={(e) => handleSettingsChange({ 
-                    profile: { ...settings.profile, name: e.target.value }
-                  })}
+                  onChange={(e) => {
+                    const updatedProfile = { ...(settings.profile || {}), name: e.target.value };
+                    handleSettingsChange({ profile: updatedProfile });
+                  }}
                   className="form-input"
                   placeholder="Enter your full name"
                 />
@@ -232,9 +250,10 @@ export const Settings: React.FC<SettingsProps> = ({
                 <input
                   type="email"
                   value={settings.profile?.email || ''}
-                  onChange={(e) => handleSettingsChange({ 
-                    profile: { ...settings.profile, email: e.target.value }
-                  })}
+                  onChange={(e) => {
+                    const updatedProfile = { ...(settings.profile || {}), email: e.target.value };
+                    handleSettingsChange({ profile: updatedProfile });
+                  }}
                   className="form-input"
                   placeholder="Enter your email address"
                 />
@@ -246,9 +265,10 @@ export const Settings: React.FC<SettingsProps> = ({
                 <input
                   type="text"
                   value={settings.profile?.company || ''}
-                  onChange={(e) => handleSettingsChange({ 
-                    profile: { ...settings.profile, company: e.target.value }
-                  })}
+                  onChange={(e) => {
+                    const updatedProfile = { ...(settings.profile || {}), company: e.target.value };
+                    handleSettingsChange({ profile: updatedProfile });
+                  }}
                   className="form-input"
                   placeholder="Enter your company name"
                 />
@@ -258,9 +278,10 @@ export const Settings: React.FC<SettingsProps> = ({
                 <input
                   type="text"
                   value={settings.profile?.jobTitle || ''}
-                  onChange={(e) => handleSettingsChange({ 
-                    profile: { ...settings.profile, jobTitle: e.target.value }
-                  })}
+                  onChange={(e) => {
+                    const updatedProfile = { ...(settings.profile || {}), jobTitle: e.target.value };
+                    handleSettingsChange({ profile: updatedProfile });
+                  }}
                   className="form-input"
                   placeholder="Enter your job title"
                 />
@@ -271,9 +292,10 @@ export const Settings: React.FC<SettingsProps> = ({
               <input
                 type="tel"
                 value={settings.profile?.phone || ''}
-                onChange={(e) => handleSettingsChange({ 
-                  profile: { ...settings.profile, phone: e.target.value }
-                })}
+                onChange={(e) => {
+                  const updatedProfile = { ...(settings.profile || {}), phone: e.target.value };
+                  handleSettingsChange({ profile: updatedProfile });
+                }}
                 className="form-input"
                 placeholder="Enter your phone number"
               />
@@ -525,6 +547,211 @@ export const Settings: React.FC<SettingsProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Project Management */}
+        <div className="content-card">
+          <div className="card-header">
+            <h2 className="card-title">Project Management</h2>
+          </div>
+          <div style={{ padding: '24px' }}>
+            <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0 }}>Your Projects ({projects.length})</h3>
+              <button 
+                className="btn btn-primary"
+                onClick={() => setShowProjectForm(true)}
+              >
+                ➕ Add New Project
+              </button>
+            </div>
+            
+            {projects.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--gray-600)' }}>
+                <p>No projects yet. Create your first project to get started!</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: '12px' }}>
+                {projects.map(project => (
+                  <div 
+                    key={project.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '16px',
+                      border: '1px solid var(--gray-200)',
+                      borderRadius: '8px',
+                      backgroundColor: project.active ? 'white' : 'var(--gray-50)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div 
+                        style={{
+                          width: '12px',
+                          height: '12px',
+                          borderRadius: '50%',
+                          backgroundColor: project.color
+                        }}
+                      />
+                      <div>
+                        <h4 style={{ margin: 0, fontWeight: '600' }}>{project.name}</h4>
+                        <p style={{ margin: 0, fontSize: '14px', color: 'var(--gray-600)' }}>
+                          {project.client} 
+                          {project.rate && ` • $${project.rate}/hr`}
+                          {!project.active && ' • Inactive'}
+                        </p>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button 
+                        className="btn btn-sm btn-secondary"
+                        onClick={() => handleEditProject(project)}
+                        style={{ padding: '6px 12px', fontSize: '12px' }}
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        className="btn btn-sm"
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to delete "${project.name}"?`)) {
+                            onDeleteProject(project.id);
+                          }
+                        }}
+                        style={{ 
+                          padding: '6px 12px', 
+                          fontSize: '12px',
+                          backgroundColor: '#fee2e2',
+                          color: '#dc2626',
+                          border: '1px solid #fca5a5'
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Project Form Modal */}
+        {showProjectForm && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              padding: '24px',
+              width: '90%',
+              maxWidth: '500px',
+              maxHeight: '90vh',
+              overflow: 'auto'
+            }}>
+              <h3 style={{ marginTop: 0 }}>
+                {editingProject ? 'Edit Project' : 'Add New Project'}
+              </h3>
+              
+              <form onSubmit={handleProjectSubmit}>
+                <div style={{ display: 'grid', gap: '16px' }}>
+                  <div className="form-group">
+                    <label>Project Name</label>
+                    <input
+                      type="text"
+                      value={projectForm.name}
+                      onChange={(e) => setProjectForm({...projectForm, name: e.target.value})}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>Client</label>
+                    <input
+                      type="text"
+                      value={projectForm.client}
+                      onChange={(e) => setProjectForm({...projectForm, client: e.target.value})}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>Hourly Rate</label>
+                    <input
+                      type="number"
+                      value={projectForm.rate}
+                      onChange={(e) => setProjectForm({...projectForm, rate: Number(e.target.value)})}
+                      className="form-input"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>Project Color</label>
+                    <input
+                      type="color"
+                      value={projectForm.color}
+                      onChange={(e) => setProjectForm({...projectForm, color: e.target.value})}
+                      className="form-input"
+                      style={{ height: '40px' }}
+                    />
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="checkbox"
+                        checked={projectForm.active}
+                        onChange={(e) => setProjectForm({...projectForm, active: e.target.checked})}
+                      />
+                      Active Project
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="checkbox"
+                        checked={projectForm.billable}
+                        onChange={(e) => setProjectForm({...projectForm, billable: e.target.checked})}
+                      />
+                      Billable
+                    </label>
+                  </div>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                  <button 
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setShowProjectForm(false);
+                      setEditingProject(null);
+                    }}
+                    style={{ flex: 1 }}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    className="btn btn-primary"
+                    style={{ flex: 1 }}
+                  >
+                    {editingProject ? 'Update Project' : 'Create Project'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
         </div>
       )}
     </div>
