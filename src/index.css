@@ -1466,7 +1466,7 @@ input:checked + .toggle-slider:before {
 
 .weekly-grid {
   display: grid;
-  grid-template-columns: repeat(5, 280px);
+  grid-template-columns: repeat(5, 1fr);
   gap: 1px;
   background: var(--border);
   border-radius: 12px;
@@ -1474,6 +1474,8 @@ input:checked + .toggle-slider:before {
   overflow-y: hidden;
   box-shadow: var(--shadow);
   width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .day-column {
@@ -1757,7 +1759,8 @@ input:checked + .toggle-slider:before {
 /* Keep calendar columns consistent across all screen sizes */
 @media (max-width: 1200px) {
   .weekly-grid {
-    grid-template-columns: repeat(5, 280px);
+    grid-template-columns: repeat(5, 1fr);
+    max-width: 100%;
   }
 }
 
@@ -2862,7 +2865,8 @@ input:checked + .toggle-slider:before {
 
 @media (max-width: 768px) {
   .weekly-grid {
-    grid-template-columns: repeat(5, 280px);
+    grid-template-columns: repeat(5, 1fr);
+    max-width: 100%;
   }
   
   .week-navigation {
