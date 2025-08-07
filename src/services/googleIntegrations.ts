@@ -43,9 +43,9 @@ class GoogleIntegrationsService {
 
   constructor() {
     this.config = {
-      clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'demo-client-id',
-      clientSecret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET || 'demo-secret',
-      redirectUri: `${window.location.origin}/auth/google/callback`,
+      clientId: import.meta.env.REACT_APP_GOOGLE_CLIENT_ID || 'demo-client-id',
+      clientSecret: import.meta.env.REACT_APP_GOOGLE_CLIENT_SECRET || 'demo-secret',
+      redirectUri: `${import.meta.env.REACT_APP_API_URL || 'http://localhost:3001'}/auth/google/callback`,
       scopes: [
         'https://www.googleapis.com/auth/userinfo.email',
         'https://www.googleapis.com/auth/userinfo.profile',
@@ -62,7 +62,7 @@ class GoogleIntegrationsService {
    * Initiate Google OAuth flow
    */
   async authenticate(): Promise<GoogleAccount> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       // For demo purposes, return mock authentication
       if (this.config.clientId === 'demo-client-id') {
         setTimeout(() => {
@@ -80,40 +80,88 @@ class GoogleIntegrationsService {
         return;
       }
 
-      // Real OAuth flow
-      const authUrl = this.buildAuthUrl();
-      
-      this.authWindow = window.open(
-        authUrl,
-        'google-auth',
-        'width=500,height=600,scrollbars=yes,resizable=yes'
-      );
-
-      // Listen for auth completion
-      const authListener = (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return;
+      try {
+        // Get OAuth URL from backend
+        const apiUrl = import.meta.env.REACT_APP_API_URL || 'http://localhost:3001';
+        const response = await fetch(`${apiUrl}/auth/google/url`);
+        const data = await response.json();
         
-        if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
-          window.removeEventListener('message', authListener);
-          this.authWindow?.close();
-          resolve(event.data.account);
-        } else if (event.data.type === 'GOOGLE_AUTH_ERROR') {
-          window.removeEventListener('message', authListener);
-          this.authWindow?.close();
-          reject(new Error(event.data.error));
+        if (!data.authUrl) {
+          throw new Error('Failed to get OAuth URL');
         }
-      };
 
-      window.addEventListener('message', authListener);
+        // Open OAuth popup
+        this.authWindow = window.open(
+          data.authUrl,
+          'google-auth',
+          'width=500,height=600,scrollbars=yes,resizable=yes'
+        );
 
-      // Handle window closed manually
-      const checkClosed = setInterval(() => {
-        if (this.authWindow?.closed) {
-          clearInterval(checkClosed);
-          window.removeEventListener('message', authListener);
-          reject(new Error('Authentication cancelled'));
-        }
-      }, 1000);
+        // Listen for auth completion
+        const authListener = (event: MessageEvent) => {
+          if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
+            window.removeEventListener('message', authListener);
+            this.authWindow?.close();
+            
+            // Extract user info from tokens and create account
+            const account: GoogleAccount = {
+              email: 'user@example.com', // Will be updated after token validation
+              name: 'User', // Will be updated after token validation
+              picture: '', // Will be updated after token validation
+              accessToken: event.data.tokens.access_token,
+              refreshToken: event.data.tokens.refresh_token,
+              expiresAt: event.data.tokens.expiry_date || (Date.now() + 3600 * 1000),
+            };
+            
+            this.storeAccount(account);
+            resolve(account);
+          } else if (event.data.type === 'GOOGLE_AUTH_ERROR') {
+            window.removeEventListener('message', authListener);
+            this.authWindow?.close();
+            reject(new Error(event.data.error));
+          }
+        };
+
+        window.addEventListener('message', authListener);
+
+        // Handle window closed manually
+        const checkClosed = setInterval(() => {
+          if (this.authWindow?.closed) {
+            clearInterval(checkClosed);
+            window.removeEventListener('message', authListener);
+            
+            // Check if tokens were stored (popup might have closed after success)
+            const storedTokens = localStorage.getItem('google_tokens');
+            if (storedTokens) {
+              const tokens = JSON.parse(storedTokens);
+              const account: GoogleAccount = {
+                email: 'user@example.com',
+                name: 'User', 
+                picture: '',
+                accessToken: tokens.access_token,
+                refreshToken: tokens.refresh_token,
+                expiresAt: tokens.expiry_date || (Date.now() + 3600 * 1000),
+              };
+              this.storeAccount(account);
+              resolve(account);
+            } else {
+              reject(new Error('Authentication cancelled'));
+            }
+          }
+        }, 1000);
+
+        // Timeout after 5 minutes
+        setTimeout(() => {
+          if (this.authWindow && !this.authWindow.closed) {
+            this.authWindow.close();
+            window.removeEventListener('message', authListener);
+            reject(new Error('Authentication timeout'));
+          }
+        }, 300000);
+
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 
