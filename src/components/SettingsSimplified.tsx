@@ -88,6 +88,13 @@ export const SettingsSimplified: React.FC = () => {
   // Save to localStorage
   const saveSettings = () => {
     try {
+      // Validation: Check if Slack is enabled but no channel is specified
+      if (settings.slackNotifications.enabled && !settings.slackNotifications.channel?.trim()) {
+        setSaveStatus('Error: Slack channel required!');
+        setTimeout(() => setSaveStatus(''), 4000);
+        return;
+      }
+
       setSaveStatus('Saving...');
       localStorage.setItem('timebeacon_settings_simplified', JSON.stringify(settings));
       setOriginalSettings(settings);
@@ -477,7 +484,7 @@ export const SettingsSimplified: React.FC = () => {
                 {settings.slackNotifications.enabled && <span style={{ color: '#3b82f6', marginLeft: '8px' }}>✓ Enabled</span>}
               </div>
               <div style={{ fontSize: '14px', color: '#6b7280' }}>
-                Send time tracking updates and reminders to your Slack workspace
+                Send time tracking updates to a specific Slack channel or user
               </div>
             </div>
           </label>
@@ -503,7 +510,9 @@ export const SettingsSimplified: React.FC = () => {
                 </div>
                 
                 <div>
-                  <label style={labelStyle}>Slack Channel (optional)</label>
+                  <label style={labelStyle}>
+                    Slack Channel/User <span style={{ color: '#ef4444', fontSize: '14px' }}>*</span>
+                  </label>
                   <input
                     type="text"
                     value={settings.slackNotifications.channel || ''}
@@ -511,9 +520,22 @@ export const SettingsSimplified: React.FC = () => {
                       ...settings.slackNotifications, 
                       channel: e.target.value 
                     })}
-                    placeholder="#timebeacon or @username"
-                    style={inputStyle}
+                    placeholder="#general, #timebeacon, or @username"
+                    style={{
+                      ...inputStyle,
+                      borderColor: settings.slackNotifications.enabled && !settings.slackNotifications.channel ? '#ef4444' : '#ccc'
+                    }}
+                    required={settings.slackNotifications.enabled}
                   />
+                  {settings.slackNotifications.enabled && !settings.slackNotifications.channel && (
+                    <div style={{ 
+                      fontSize: '12px', 
+                      color: '#ef4444', 
+                      marginTop: '4px' 
+                    }}>
+                      Channel or user is required for Slack notifications
+                    </div>
+                  )}
                 </div>
               </div>
               
