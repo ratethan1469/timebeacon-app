@@ -14,11 +14,14 @@ interface SettingsData {
     enabled: boolean;
     cadence: 'hourly' | 'daily' | 'weekly' | 'realtime';
     time?: string; // For daily notifications
+    weeklyDay?: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
   };
   slackNotifications: {
     enabled: boolean;
     cadence: 'hourly' | 'daily' | 'weekly' | 'realtime';
     channel?: string;
+    weeklyDay?: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+    weeklyTime?: string;
   };
   autoBreaks: boolean;
 }
@@ -36,12 +39,15 @@ const defaultSettings: SettingsData = {
   emailNotifications: {
     enabled: false,
     cadence: 'daily',
-    time: '17:00'
+    time: '17:00',
+    weeklyDay: 'friday'
   },
   slackNotifications: {
     enabled: false,
     cadence: 'realtime',
-    channel: ''
+    channel: '',
+    weeklyDay: 'friday',
+    weeklyTime: '09:00'
   },
   autoBreaks: false
 };
@@ -375,36 +381,75 @@ export const SettingsSimplified: React.FC = () => {
           </label>
 
           {settings.emailNotifications.enabled && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
-              <div>
-                <label style={labelStyle}>Notification Frequency</label>
-                <select
-                  value={settings.emailNotifications.cadence}
-                  onChange={(e) => handleChange('emailNotifications', { 
-                    ...settings.emailNotifications, 
-                    cadence: e.target.value as 'hourly' | 'daily' | 'weekly' | 'realtime'
-                  })}
-                  style={inputStyle}
-                >
-                  <option value="realtime">Real-time (immediate)</option>
-                  <option value="hourly">Every hour</option>
-                  <option value="daily">Daily digest</option>
-                  <option value="weekly">Weekly summary</option>
-                </select>
-              </div>
-              
-              {settings.emailNotifications.cadence === 'daily' && (
+            <div style={{ marginTop: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={labelStyle}>Daily Email Time</label>
-                  <input
-                    type="time"
-                    value={settings.emailNotifications.time || '17:00'}
+                  <label style={labelStyle}>Notification Frequency</label>
+                  <select
+                    value={settings.emailNotifications.cadence}
                     onChange={(e) => handleChange('emailNotifications', { 
                       ...settings.emailNotifications, 
-                      time: e.target.value 
+                      cadence: e.target.value as 'hourly' | 'daily' | 'weekly' | 'realtime'
                     })}
                     style={inputStyle}
-                  />
+                  >
+                    <option value="realtime">Real-time (immediate)</option>
+                    <option value="hourly">Every hour</option>
+                    <option value="daily">Daily digest</option>
+                    <option value="weekly">Weekly summary</option>
+                  </select>
+                </div>
+                
+                {settings.emailNotifications.cadence === 'daily' && (
+                  <div>
+                    <label style={labelStyle}>Daily Email Time</label>
+                    <input
+                      type="time"
+                      value={settings.emailNotifications.time || '17:00'}
+                      onChange={(e) => handleChange('emailNotifications', { 
+                        ...settings.emailNotifications, 
+                        time: e.target.value 
+                      })}
+                      style={inputStyle}
+                    />
+                  </div>
+                )}
+              </div>
+              
+              {settings.emailNotifications.cadence === 'weekly' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={labelStyle}>Weekly Day</label>
+                    <select
+                      value={settings.emailNotifications.weeklyDay || 'friday'}
+                      onChange={(e) => handleChange('emailNotifications', { 
+                        ...settings.emailNotifications, 
+                        weeklyDay: e.target.value as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
+                      })}
+                      style={inputStyle}
+                    >
+                      <option value="monday">Monday</option>
+                      <option value="tuesday">Tuesday</option>
+                      <option value="wednesday">Wednesday</option>
+                      <option value="thursday">Thursday</option>
+                      <option value="friday">Friday</option>
+                      <option value="saturday">Saturday</option>
+                      <option value="sunday">Sunday</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label style={labelStyle}>Weekly Email Time</label>
+                    <input
+                      type="time"
+                      value={settings.emailNotifications.time || '17:00'}
+                      onChange={(e) => handleChange('emailNotifications', { 
+                        ...settings.emailNotifications, 
+                        time: e.target.value 
+                      })}
+                      style={inputStyle}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -438,37 +483,76 @@ export const SettingsSimplified: React.FC = () => {
           </label>
 
           {settings.slackNotifications.enabled && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
-              <div>
-                <label style={labelStyle}>Notification Frequency</label>
-                <select
-                  value={settings.slackNotifications.cadence}
-                  onChange={(e) => handleChange('slackNotifications', { 
-                    ...settings.slackNotifications, 
-                    cadence: e.target.value as 'hourly' | 'daily' | 'weekly' | 'realtime'
-                  })}
-                  style={inputStyle}
-                >
-                  <option value="realtime">Real-time updates</option>
-                  <option value="hourly">Hourly summaries</option>
-                  <option value="daily">Daily reports</option>
-                  <option value="weekly">Weekly summaries</option>
-                </select>
+            <div style={{ marginTop: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                <div>
+                  <label style={labelStyle}>Notification Frequency</label>
+                  <select
+                    value={settings.slackNotifications.cadence}
+                    onChange={(e) => handleChange('slackNotifications', { 
+                      ...settings.slackNotifications, 
+                      cadence: e.target.value as 'hourly' | 'daily' | 'weekly' | 'realtime'
+                    })}
+                    style={inputStyle}
+                  >
+                    <option value="realtime">Real-time updates</option>
+                    <option value="hourly">Hourly summaries</option>
+                    <option value="daily">Daily reports</option>
+                    <option value="weekly">Weekly summaries</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label style={labelStyle}>Slack Channel (optional)</label>
+                  <input
+                    type="text"
+                    value={settings.slackNotifications.channel || ''}
+                    onChange={(e) => handleChange('slackNotifications', { 
+                      ...settings.slackNotifications, 
+                      channel: e.target.value 
+                    })}
+                    placeholder="#timebeacon or @username"
+                    style={inputStyle}
+                  />
+                </div>
               </div>
               
-              <div>
-                <label style={labelStyle}>Slack Channel (optional)</label>
-                <input
-                  type="text"
-                  value={settings.slackNotifications.channel || ''}
-                  onChange={(e) => handleChange('slackNotifications', { 
-                    ...settings.slackNotifications, 
-                    channel: e.target.value 
-                  })}
-                  placeholder="#timebeacon or @username"
-                  style={inputStyle}
-                />
-              </div>
+              {settings.slackNotifications.cadence === 'weekly' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={labelStyle}>Weekly Day</label>
+                    <select
+                      value={settings.slackNotifications.weeklyDay || 'friday'}
+                      onChange={(e) => handleChange('slackNotifications', { 
+                        ...settings.slackNotifications, 
+                        weeklyDay: e.target.value as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
+                      })}
+                      style={inputStyle}
+                    >
+                      <option value="monday">Monday</option>
+                      <option value="tuesday">Tuesday</option>
+                      <option value="wednesday">Wednesday</option>
+                      <option value="thursday">Thursday</option>
+                      <option value="friday">Friday</option>
+                      <option value="saturday">Saturday</option>
+                      <option value="sunday">Sunday</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label style={labelStyle}>Weekly Slack Time</label>
+                    <input
+                      type="time"
+                      value={settings.slackNotifications.weeklyTime || '09:00'}
+                      onChange={(e) => handleChange('slackNotifications', { 
+                        ...settings.slackNotifications, 
+                        weeklyTime: e.target.value 
+                      })}
+                      style={inputStyle}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
