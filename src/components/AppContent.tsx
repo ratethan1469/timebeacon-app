@@ -5,7 +5,7 @@ import { Dashboard } from './Dashboard';
 import { Reports } from './Reports';
 import EnhancedReports from './EnhancedReports';
 import PermissionsManager from './PermissionsManager';
-import { Settings } from './Settings';
+import { SettingsPage } from './SettingsPage';
 import { Integrations } from './Integrations';
 import { PrivacyOwnership } from './PrivacyOwnership';
 import { AIInsights } from './AIInsights';
@@ -121,16 +121,7 @@ export function AppContent() {
       case 'permissions':
         return <PermissionsManager />;
       case 'settings':
-        return (
-          <Settings 
-            settings={timeTracker.settings}
-            projects={timeTracker.projects}
-            onUpdateSettings={timeTracker.setSettings}
-            onAddProject={timeTracker.addProject}
-            onUpdateProject={timeTracker.updateProject}
-            onDeleteProject={timeTracker.deleteProject}
-          />
-        );
+        return <SettingsPage />;
       case 'privacy':
         return (
           <PrivacyOwnership 

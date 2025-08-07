@@ -17,7 +17,7 @@ This guide will get you production-ready Google integration for multiple users b
 ### 1.1 Create Google Cloud Project
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create new project: **"TimeBeacon Integration"**
-3. Note your Project ID
+3. Note your Project ID Number: 696202687856  ID: timebeacon-integrations
 
 ### 1.2 Enable Required APIs
 Enable these APIs (click Enable for each):
@@ -27,6 +27,7 @@ Enable these APIs (click Enable for each):
 - **Google Docs API**: https://console.cloud.google.com/apis/library/docs.googleapis.com
 - **Google Sheets API**: https://console.cloud.google.com/apis/library/sheets.googleapis.com
 - **Google Slides API**: https://console.cloud.google.com/apis/library/slides.googleapis.com
+- **Google Apps Script API**: https://console.cloud.google.com/apis/library/script.googleapis.com
 
 ### 1.3 Configure OAuth Consent Screen
 1. Go to **"APIs & Services" > "OAuth consent screen"**
@@ -38,7 +39,7 @@ Enable these APIs (click Enable for each):
    Developer contact: [your email] 
    App domain: https://app.timebeacon.io
    Privacy Policy: https://timebeacon.io/privacy
-   Terms of Service: https://timebeacon.io/terms
+   Terms of Service: https://timebeacon.io/tos
    ```
 4. **Scopes**: Add these scopes:
    - `../auth/gmail.readonly`
@@ -48,9 +49,48 @@ Enable these APIs (click Enable for each):
    - `../auth/documents.readonly`
    - `../auth/spreadsheets.readonly`
    - `../auth/presentations.readonly`
+   - `../auth/script.projects.readonly`
 
 5. **Test Users**: Add your email for testing
-6. **Submit for verification** (required for production)
+6. **Submit for verification** (required for production):
+   - Click **"Publish App"** in OAuth consent screen
+   - **Fill out scope justifications** (copy these exactly):
+     
+     **Gmail scopes justification:**
+     ```
+     Timebeacon is a time tracking application that automatically tracks time spent on email tasks. We access Gmail metadata (subjects, timestamps, sender info) to identify when users are working on email-related activities and automatically create time entries. We never access email body content, only headers and metadata for time tracking purposes.
+     ```
+     
+     **Drive scopes justification:**
+     ```
+     Timebeacon tracks time spent working on Google Drive documents, spreadsheets, and presentations. We access file metadata (names, modification times, access patterns) to automatically detect when users are actively working on documents and create accurate time entries. We do not access file content, only metadata for productivity tracking.
+     ```
+     
+     **Calendar scopes justification:**
+     ```
+     Timebeacon integrates with Google Calendar to automatically track time spent in meetings and scheduled work blocks. We access calendar event metadata (titles, times, attendees) to create time entries and provide accurate productivity insights. This helps users understand how their scheduled time aligns with actual work patterns.
+     ```
+     
+     **Apps Script scopes justification:**
+     ```
+     Timebeacon tracks time spent developing and managing Google Apps Script projects. We access project metadata (names, modification times) to automatically create time entries when users are working on automation scripts and workflows.
+     ```
+   
+   - **Demo video requirements:**
+     - Show login flow with Google OAuth
+     - Demonstrate time tracking based on Gmail activity
+     - Show calendar integration creating time entries
+     - Highlight that only metadata is accessed, not content
+     - Upload to YouTube as unlisted video
+   
+   - **Additional requirements:**
+     - Domain verification for timebeacon.io
+     - Privacy policy URL: https://timebeacon.io/privacy
+     - Terms of service URL: https://timebeacon.io/tos
+     - App screenshots showing the integration features
+   
+   - Wait 1-7 days for Google review
+   - **Note**: Until verified, limited to 100 users in "Testing" mode
 
 ### 1.4 Create OAuth Credentials
 1. Go to **"Credentials" > "Create Credentials" > "OAuth client ID"**
@@ -62,7 +102,10 @@ Enable these APIs (click Enable for each):
    http://localhost:3001/auth/google/callback (for testing)
    ```
 5. **Copy Client ID and Client Secret** - you'll need these!
+[CLIENT_ID] - Replace with your actual Client ID
+[CLIENT_SECRET] - Replace with your actual Client Secret
 
+KEEP THOSE SECURE!!!
 ---
 
 ## 🖥️ Step 2: Deploy Backend API
