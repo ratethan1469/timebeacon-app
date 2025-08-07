@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings as SettingsType, Project } from '../types';
 import { MultiSelect } from './MultiSelect';
 import { projectTemplates, ProjectTemplate } from '../data/projectTemplates';
