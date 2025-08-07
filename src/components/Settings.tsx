@@ -28,46 +28,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
     exportTimeEntriesToPDF
   } = useTimeTrackerDB();
   
-  // Add safety checks for state initialization
-  const settings = state?.settings;
-  const projects = state?.projects || [];
-  
-  // Show loading state while data is being fetched
-  if (!settings) {
-    return (
-      <div>
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-        <div className="dashboard-header">
-          <h1 className="dashboard-title">Settings</h1>
-          <p className="dashboard-subtitle">Loading your preferences...</p>
-        </div>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '200px' 
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ 
-              width: '40px', 
-              height: '40px', 
-              border: '4px solid #f3f4f6', 
-              borderTop: '4px solid #3b82f6', 
-              borderRadius: '50%', 
-              animation: 'spin 1s linear infinite',
-              margin: '0 auto 16px'
-            }} />
-            <p style={{ color: 'var(--gray-600)' }}>Loading settings...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const { settings, projects } = state;
   const [activeTab, setActiveTab] = useState<'general' | 'permissions'>('general');
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
