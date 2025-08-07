@@ -51,16 +51,16 @@ export const Settings: React.FC<SettingsProps> = ({
   
   const handleSettingsChange = (updates: Partial<SettingsType>) => {
     try {
+      // First update local state for immediate UI response
       const updatedSettings = { ...localSettings, ...updates };
       setLocalSettings(updatedSettings);
+      
+      // Then call the parent update
       onUpdateSettings(updatedSettings);
       
-      // Also save directly to localStorage as backup
-      localStorage.setItem('timebeacon_settings_v6', JSON.stringify(updatedSettings));
       console.log('✅ Settings saved:', Object.keys(updates));
     } catch (error) {
       console.error('❌ Failed to update settings:', error);
-      alert('Failed to save settings. Please try again.');
     }
   };
 
