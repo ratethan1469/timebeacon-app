@@ -32,6 +32,19 @@ export const Settings: React.FC<SettingsProps> = (props) => {
   const settings = state?.settings;
   const projects = state?.projects || [];
   
+  // Add timeout for loading state - if it takes too long, show fallback
+  const [showLoadingTimeout, setShowLoadingTimeout] = useState(false);
+  
+  useEffect(() => {
+    if (!settings) {
+      const timer = setTimeout(() => {
+        setShowLoadingTimeout(true);
+      }, 5000); // Show timeout message after 5 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [settings]);
+
   // Show loading state while data is being fetched
   if (!settings) {
     return (
@@ -44,7 +57,9 @@ export const Settings: React.FC<SettingsProps> = (props) => {
         `}</style>
         <div className="dashboard-header">
           <h1 className="dashboard-title">Settings</h1>
-          <p className="dashboard-subtitle">Loading your preferences...</p>
+          <p className="dashboard-subtitle">
+            {showLoadingTimeout ? 'Having trouble loading? The backend may be starting up.' : 'Loading your preferences...'}
+          </p>
         </div>
         <div style={{ 
           display: 'flex', 
@@ -53,16 +68,35 @@ export const Settings: React.FC<SettingsProps> = (props) => {
           height: '200px' 
         }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ 
-              width: '40px', 
-              height: '40px', 
-              border: '4px solid #f3f4f6', 
-              borderTop: '4px solid #3b82f6', 
-              borderRadius: '50%', 
-              animation: 'spin 1s linear infinite',
-              margin: '0 auto 16px'
-            }} />
-            <p style={{ color: 'var(--gray-600)' }}>Loading settings...</p>
+            {!showLoadingTimeout ? (
+              <>
+                <div style={{ 
+                  width: '40px', 
+                  height: '40px', 
+                  border: '4px solid #f3f4f6', 
+                  borderTop: '4px solid #3b82f6', 
+                  borderRadius: '50%', 
+                  animation: 'spin 1s linear infinite',
+                  margin: '0 auto 16px'
+                }} />
+                <p style={{ color: 'var(--gray-600)' }}>Loading settings...</p>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+                <h3 style={{ color: 'var(--gray-700)', margin: '0 0 8px 0' }}>Backend Starting Up</h3>
+                <p style={{ color: 'var(--gray-600)', margin: '0 0 16px 0', maxWidth: '400px' }}>
+                  The backend service is initializing. This can take 1-2 minutes on the free tier.
+                </p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="btn btn-primary"
+                  style={{ padding: '8px 16px' }}
+                >
+                  Refresh Page
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
