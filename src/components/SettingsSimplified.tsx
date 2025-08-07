@@ -189,18 +189,6 @@ export const SettingsSimplified: React.FC = () => {
           </button>
         </div>
         
-        {saveStatus && saveStatus !== 'Saving...' && (
-          <div style={{ 
-            padding: '12px 16px', 
-            backgroundColor: saveStatus.includes('failed') ? '#fee' : '#eff6ff',
-            color: saveStatus.includes('failed') ? '#c33' : '#1e40af',
-            borderRadius: '6px',
-            fontSize: '14px',
-            border: saveStatus.includes('failed') ? '1px solid #fecaca' : '1px solid #dbeafe'
-          }}>
-            {saveStatus}
-          </div>
-        )}
 
         {hasChanges && (
           <div style={{ 
