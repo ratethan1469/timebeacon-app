@@ -118,13 +118,35 @@ export const Settings: React.FC<SettingsProps> = ({
   };
 
   const exportToCSV = () => {
-    // This would implement CSV export functionality
-    alert('CSV export feature would be implemented here');
+    try {
+      const timeEntries = JSON.parse(localStorage.getItem('timebeacon_entries_v6') || '[]');
+      if (timeEntries.length === 0) {
+        alert('No time entries found to export.');
+        return;
+      }
+      
+      const csvData = 'Date,Start Time,End Time,Duration (hrs),Project,Client,Description,Billable\n' + 
+        timeEntries.map(entry => 
+          `"${entry.date}","${entry.startTime}","${entry.endTime}",${entry.duration},"${entry.project}","${entry.client}","${entry.description}",${entry.billable ? 'Yes' : 'No'}`
+        ).join('\n');
+      
+      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `timebeacon-export-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    }
   };
 
   const exportToPDF = () => {
-    // This would implement PDF export functionality
-    alert('PDF export feature would be implemented here');
+    alert('PDF export coming soon! For now, please use the CSV export option.');
   };
 
   return (
@@ -492,7 +514,7 @@ export const Settings: React.FC<SettingsProps> = ({
                   alignItems: 'center',
                   gap: '8px'
                 }}
-                onClick={() => alert('Integration features would be implemented here')}
+                onClick={() => window.location.href = '/integrations'}
               >
                 <div style={{ fontSize: '32px' }}>🔗</div>
                 <div style={{ fontWeight: '600' }}>Integrations</div>
