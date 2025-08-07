@@ -41,19 +41,31 @@ export const Settings: React.FC<SettingsProps> = ({
     startDate: new Date().toISOString().split('T')[0]
   });
 
+  // Local state for immediate UI updates
+  const [localSettings, setLocalSettings] = useState(settings);
+  
+  // Sync localSettings when settings prop changes
+  useEffect(() => {
+    setLocalSettings(settings);
+  }, [settings]);
+  
   const handleSettingsChange = (updates: Partial<SettingsType>) => {
     try {
-      const updatedSettings = { ...settings, ...updates };
+      const updatedSettings = { ...localSettings, ...updates };
+      setLocalSettings(updatedSettings);
       onUpdateSettings(updatedSettings);
-      console.log('Settings updated:', updates);
+      
+      // Also save directly to localStorage as backup
+      localStorage.setItem('timebeacon_settings_v6', JSON.stringify(updatedSettings));
+      console.log('✅ Settings saved:', Object.keys(updates));
     } catch (error) {
-      console.error('Failed to update settings:', error);
+      console.error('❌ Failed to update settings:', error);
       alert('Failed to save settings. Please try again.');
     }
   };
 
   // Ensure emailNotifications is always defined with defaults
-  const safeEmailNotifications = settings.emailNotifications || {
+  const safeEmailNotifications = localSettings.emailNotifications || {
     enabled: false,
     dailyReviewTime: '17:30',
     approvalReminders: true,
@@ -236,9 +248,9 @@ export const Settings: React.FC<SettingsProps> = ({
                 <label>Full Name</label>
                 <input
                   type="text"
-                  value={settings.profile?.name || ''}
+                  value={localSettings.profile?.name || ''}
                   onChange={(e) => {
-                    const updatedProfile = { ...(settings.profile || {}), name: e.target.value };
+                    const updatedProfile = { ...(localSettings.profile || {}), name: e.target.value };
                     handleSettingsChange({ profile: updatedProfile });
                   }}
                   className="form-input"
@@ -249,9 +261,9 @@ export const Settings: React.FC<SettingsProps> = ({
                 <label>Email</label>
                 <input
                   type="email"
-                  value={settings.profile?.email || ''}
+                  value={localSettings.profile?.email || ''}
                   onChange={(e) => {
-                    const updatedProfile = { ...(settings.profile || {}), email: e.target.value };
+                    const updatedProfile = { ...(localSettings.profile || {}), email: e.target.value };
                     handleSettingsChange({ profile: updatedProfile });
                   }}
                   className="form-input"
@@ -264,9 +276,9 @@ export const Settings: React.FC<SettingsProps> = ({
                 <label>Company</label>
                 <input
                   type="text"
-                  value={settings.profile?.company || ''}
+                  value={localSettings.profile?.company || ''}
                   onChange={(e) => {
-                    const updatedProfile = { ...(settings.profile || {}), company: e.target.value };
+                    const updatedProfile = { ...(localSettings.profile || {}), company: e.target.value };
                     handleSettingsChange({ profile: updatedProfile });
                   }}
                   className="form-input"
@@ -277,9 +289,9 @@ export const Settings: React.FC<SettingsProps> = ({
                 <label>Job Title</label>
                 <input
                   type="text"
-                  value={settings.profile?.jobTitle || ''}
+                  value={localSettings.profile?.jobTitle || ''}
                   onChange={(e) => {
-                    const updatedProfile = { ...(settings.profile || {}), jobTitle: e.target.value };
+                    const updatedProfile = { ...(localSettings.profile || {}), jobTitle: e.target.value };
                     handleSettingsChange({ profile: updatedProfile });
                   }}
                   className="form-input"
@@ -291,9 +303,9 @@ export const Settings: React.FC<SettingsProps> = ({
               <label>Phone</label>
               <input
                 type="tel"
-                value={settings.profile?.phone || ''}
+                value={localSettings.profile?.phone || ''}
                 onChange={(e) => {
-                  const updatedProfile = { ...(settings.profile || {}), phone: e.target.value };
+                  const updatedProfile = { ...(localSettings.profile || {}), phone: e.target.value };
                   handleSettingsChange({ profile: updatedProfile });
                 }}
                 className="form-input"
@@ -316,9 +328,9 @@ export const Settings: React.FC<SettingsProps> = ({
               <div className="form-group">
                 <label>Timezone</label>
                 <select
-                  value={settings.workingHours.timezone}
+                  value={localSettings.workingHours?.timezone || 'America/New_York'}
                   onChange={(e) => handleSettingsChange({ 
-                    workingHours: { ...settings.workingHours, timezone: e.target.value }
+                    workingHours: { ...localSettings.workingHours, timezone: e.target.value }
                   })}
                   className="form-input"
                 >
@@ -339,9 +351,9 @@ export const Settings: React.FC<SettingsProps> = ({
                 <label>Work Start Time</label>
                 <input
                   type="time"
-                  value={settings.workingHours.start}
+                  value={localSettings.workingHours?.start || '09:00'}
                   onChange={(e) => handleSettingsChange({ 
-                    workingHours: { ...settings.workingHours, start: e.target.value }
+                    workingHours: { ...localSettings.workingHours, start: e.target.value }
                   })}
                   className="form-input"
                 />
@@ -350,9 +362,9 @@ export const Settings: React.FC<SettingsProps> = ({
                 <label>Work End Time</label>
                 <input
                   type="time"
-                  value={settings.workingHours.end}
+                  value={localSettings.workingHours?.end || '17:00'}
                   onChange={(e) => handleSettingsChange({ 
-                    workingHours: { ...settings.workingHours, end: e.target.value }
+                    workingHours: { ...localSettings.workingHours, end: e.target.value }
                   })}
                   className="form-input"
                 />
@@ -363,7 +375,7 @@ export const Settings: React.FC<SettingsProps> = ({
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                 <input 
                   type="checkbox" 
-                  checked={settings.notifications}
+                  checked={localSettings.notifications || false}
                   onChange={(e) => handleSettingsChange({ notifications: e.target.checked })}
                 />
                 <span>Enable browser notifications</span>
@@ -372,7 +384,7 @@ export const Settings: React.FC<SettingsProps> = ({
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input 
                   type="checkbox" 
-                  checked={settings.autoBreaks}
+                  checked={localSettings.autoBreaks || false}
                   onChange={(e) => handleSettingsChange({ autoBreaks: e.target.checked })}
                 />
                 <span>Enable automatic break detection</span>
