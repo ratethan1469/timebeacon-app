@@ -5,7 +5,7 @@ import { Dashboard } from './Dashboard';
 import { Reports } from './Reports';
 import EnhancedReports from './EnhancedReports';
 import PermissionsManager from './PermissionsManager';
-import { SettingsPage } from './SettingsPage';
+import { SettingsSimplified } from './SettingsSimplified';
 import { Integrations } from './Integrations';
 import { PrivacyOwnership } from './PrivacyOwnership';
 import { AIInsights } from './AIInsights';
@@ -121,7 +121,7 @@ export function AppContent() {
       case 'permissions':
         return <PermissionsManager />;
       case 'settings':
-        return <SettingsPage />;
+        return <SettingsSimplified />;
       case 'privacy':
         return (
           <PrivacyOwnership 
