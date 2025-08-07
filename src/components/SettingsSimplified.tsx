@@ -32,7 +32,9 @@ const defaultSettings: SettingsData = {
 
 export const SettingsSimplified: React.FC = () => {
   const [settings, setSettings] = useState<SettingsData>(defaultSettings);
+  const [originalSettings, setOriginalSettings] = useState<SettingsData>(defaultSettings);
   const [saveStatus, setSaveStatus] = useState('');
+  const [hasChanges, setHasChanges] = useState(false);
 
   // Load settings from localStorage
   useEffect(() => {
@@ -40,7 +42,9 @@ export const SettingsSimplified: React.FC = () => {
       const saved = localStorage.getItem('timebeacon_settings_simplified');
       if (saved) {
         const parsed = JSON.parse(saved);
-        setSettings({ ...defaultSettings, ...parsed });
+        const loadedSettings = { ...defaultSettings, ...parsed };
+        setSettings(loadedSettings);
+        setOriginalSettings(loadedSettings);
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -48,13 +52,15 @@ export const SettingsSimplified: React.FC = () => {
   }, []);
 
   // Save to localStorage
-  const saveSettings = (newSettings: SettingsData) => {
+  const saveSettings = () => {
     try {
-      localStorage.setItem('timebeacon_settings_simplified', JSON.stringify(newSettings));
-      setSettings(newSettings);
+      setSaveStatus('Saving...');
+      localStorage.setItem('timebeacon_settings_simplified', JSON.stringify(settings));
+      setOriginalSettings(settings);
+      setHasChanges(false);
       setSaveStatus('Saved ✓');
-      setTimeout(() => setSaveStatus(''), 2000);
-      console.log('Settings saved:', newSettings);
+      setTimeout(() => setSaveStatus(''), 3000);
+      console.log('Settings saved:', settings);
     } catch (error) {
       console.error('Save failed:', error);
       setSaveStatus('Save failed!');
@@ -62,10 +68,11 @@ export const SettingsSimplified: React.FC = () => {
     }
   };
 
-  // Handle input changes
+  // Handle input changes (no auto-save)
   const handleChange = (field: keyof SettingsData, value: string | boolean) => {
     const newSettings = { ...settings, [field]: value };
-    saveSettings(newSettings);
+    setSettings(newSettings);
+    setHasChanges(JSON.stringify(newSettings) !== JSON.stringify(originalSettings));
   };
 
   // Export CSV
@@ -131,25 +138,65 @@ export const SettingsSimplified: React.FC = () => {
     cursor: 'pointer' as const
   };
 
+  const saveButtonStyle = {
+    backgroundColor: hasChanges ? '#3b82f6' : '#94a3b8',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    padding: '12px 24px',
+    fontSize: '16px',
+    fontWeight: '600' as const,
+    cursor: hasChanges ? 'pointer' as const : 'not-allowed' as const,
+    transition: 'all 0.2s',
+    minWidth: '120px'
+  };
+
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px' }}>
       <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#111', marginBottom: '8px' }}>
-          Settings
-        </h1>
-        <p style={{ color: '#666', fontSize: '16px' }}>
-          Configure your TimeBeacon preferences
-        </p>
-        {saveStatus && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+          <div>
+            <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#111', marginBottom: '8px' }}>
+              Settings
+            </h1>
+            <p style={{ color: '#666', fontSize: '16px' }}>
+              Configure your TimeBeacon preferences
+            </p>
+          </div>
+          
+          <button
+            onClick={saveSettings}
+            disabled={!hasChanges}
+            style={saveButtonStyle}
+          >
+            {saveStatus === 'Saving...' ? 'Saving...' : hasChanges ? 'Save Settings' : 'No Changes'}
+          </button>
+        </div>
+        
+        {saveStatus && saveStatus !== 'Saving...' && (
           <div style={{ 
-            marginTop: '12px', 
-            padding: '8px 16px', 
-            backgroundColor: saveStatus.includes('failed') ? '#fee' : '#efe',
-            color: saveStatus.includes('failed') ? '#c33' : '#363',
-            borderRadius: '4px',
-            fontSize: '14px'
+            padding: '12px 16px', 
+            backgroundColor: saveStatus.includes('failed') ? '#fee' : '#eff6ff',
+            color: saveStatus.includes('failed') ? '#c33' : '#1e40af',
+            borderRadius: '6px',
+            fontSize: '14px',
+            border: saveStatus.includes('failed') ? '1px solid #fecaca' : '1px solid #dbeafe'
           }}>
             {saveStatus}
+          </div>
+        )}
+
+        {hasChanges && (
+          <div style={{ 
+            padding: '12px 16px', 
+            backgroundColor: '#fef3c7',
+            color: '#92400e',
+            borderRadius: '6px',
+            fontSize: '14px',
+            border: '1px solid #fcd34d',
+            marginTop: '12px'
+          }}>
+            ⚠️ You have unsaved changes
           </div>
         )}
       </div>
@@ -350,6 +397,40 @@ export const SettingsSimplified: React.FC = () => {
             🔗 Integrations
           </button>
         </div>
+      </div>
+
+      {/* Bottom Save Button */}
+      <div style={{ 
+        marginTop: '40px', 
+        padding: '24px',
+        backgroundColor: hasChanges ? '#f8fafc' : 'transparent',
+        border: hasChanges ? '1px solid #e2e8f0' : 'none',
+        borderRadius: '8px',
+        textAlign: 'center' as const
+      }}>
+        <button
+          onClick={saveSettings}
+          disabled={!hasChanges}
+          style={{
+            ...saveButtonStyle,
+            fontSize: '18px',
+            padding: '16px 32px',
+            minWidth: '200px'
+          }}
+        >
+          {saveStatus === 'Saving...' ? 'Saving Changes...' : hasChanges ? 'Save All Settings' : 'All Settings Saved'}
+        </button>
+        
+        {hasChanges && (
+          <p style={{ 
+            marginTop: '12px', 
+            color: '#64748b', 
+            fontSize: '14px',
+            margin: '12px 0 0 0'
+          }}>
+            Don't forget to save your changes before leaving this page
+          </p>
+        )}
       </div>
     </div>
   );
