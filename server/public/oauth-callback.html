@@ -62,9 +62,9 @@
                 if (data.success) {
                     // Store tokens for parent window
                     if (window.opener) {
-                        window.opener.localStorage.setItem('gmail_tokens', JSON.stringify(data.tokens));
+                        window.opener.localStorage.setItem('google_tokens', JSON.stringify(data.tokens));
                         window.opener.postMessage({ 
-                            type: 'GMAIL_AUTH_SUCCESS', 
+                            type: 'GOOGLE_AUTH_SUCCESS', 
                             tokens: data.tokens 
                         }, '*');
                     }
