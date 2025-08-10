@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { googleIntegrationService, ApiTestResult } from '../services/googleIntegrationService';
 
 interface Integration {
   id: string;
@@ -80,16 +81,165 @@ const integrations: Integration[] = [
 
 export const IntegrationsRevamped: React.FC = () => {
   const [connectedIntegrations, setConnectedIntegrations] = useState<Set<string>>(new Set());
+  const [isConnecting, setIsConnecting] = useState<Set<string>>(new Set());
+  const [testResults, setTestResults] = useState<{ [key: string]: ApiTestResult }>({});
+  const [authStatus, setAuthStatus] = useState(googleIntegrationService.getAuthStatus());
+
+  // Check authentication status on mount
+  useEffect(() => {
+    const status = googleIntegrationService.getAuthStatus();
+    setAuthStatus(status);
+    
+    if (status.isAuthenticated) {
+      // If authenticated, mark Google services as connected
+      const googleServices = ['gmail', 'google-calendar', 'google-drive'];
+      setConnectedIntegrations(new Set(googleServices));
+    }
+  }, []);
+
+  const handleGoogleConnect = async (integrationId: string) => {
+    if (connectedIntegrations.has(integrationId)) {
+      // Disconnect
+      handleDisconnect(integrationId);
+      return;
+    }
+
+    // Connect
+    setIsConnecting(prev => new Set([...prev, integrationId]));
+    
+    try {
+      console.log(`🔐 Starting OAuth flow for ${integrationId}...`);
+      
+      // Generate auth URL
+      const { url, state } = googleIntegrationService.generateAuthUrl();
+      
+      // Store state in sessionStorage for validation
+      sessionStorage.setItem('google_oauth_state', state);
+      sessionStorage.setItem('connecting_service', integrationId);
+      
+      // Open OAuth popup
+      const popup = window.open(
+        url,
+        'google-oauth',
+        'width=500,height=600,scrollbars=yes,resizable=yes'
+      );
+
+      if (!popup) {
+        throw new Error('Popup blocked. Please allow popups for this site.');
+      }
+
+      // Listen for OAuth callback
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          setIsConnecting(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(integrationId);
+            return newSet;
+          });
+        }
+      }, 1000);
+
+      // Listen for OAuth success message
+      const messageListener = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+
+        if (event.data.type === 'OAUTH_SUCCESS') {
+          clearInterval(checkClosed);
+          popup.close();
+          
+          // Mark as connected and run tests
+          const googleServices = ['gmail', 'google-calendar', 'google-drive'];
+          setConnectedIntegrations(new Set(googleServices));
+          setAuthStatus(googleIntegrationService.getAuthStatus());
+          
+          // Run API tests
+          runApiTests();
+          
+          window.removeEventListener('message', messageListener);
+        } else if (event.data.type === 'OAUTH_ERROR') {
+          clearInterval(checkClosed);
+          popup.close();
+          console.error('OAuth error:', event.data.error);
+          alert(`Connection failed: ${event.data.error}`);
+          window.removeEventListener('message', messageListener);
+        }
+      };
+
+      window.addEventListener('message', messageListener);
+
+    } catch (error) {
+      console.error(`Failed to connect ${integrationId}:`, error);
+      alert(`Failed to connect: ${error.message}`);
+    } finally {
+      setIsConnecting(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(integrationId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleDisconnect = (integrationId: string) => {
+    // Clear tokens and update state
+    googleIntegrationService.clearTokens();
+    setConnectedIntegrations(new Set());
+    setAuthStatus(googleIntegrationService.getAuthStatus());
+    setTestResults({});
+    
+    console.log(`Disconnected from Google services`);
+  };
+
+  const runApiTests = async () => {
+    console.log('🧪 Running API tests...');
+    
+    try {
+      const results = await googleIntegrationService.runAllTests();
+      const resultMap: { [key: string]: ApiTestResult } = {};
+      
+      results.forEach(result => {
+        const serviceId = result.service.toLowerCase().replace(' ', '-');
+        if (serviceId === 'drive') {
+          resultMap['google-drive'] = result;
+        } else if (serviceId === 'gmail') {
+          resultMap['gmail'] = result;
+        } else if (serviceId === 'calendar') {
+          resultMap['google-calendar'] = result;
+        }
+      });
+      
+      setTestResults(resultMap);
+      
+      // Log results
+      results.forEach(result => {
+        if (result.status === 'success') {
+          console.log(`✅ ${result.service} API: Connected successfully`);
+        } else {
+          console.error(`❌ ${result.service} API: ${result.details.error}`);
+        }
+      });
+      
+    } catch (error) {
+      console.error('Failed to run API tests:', error);
+    }
+  };
 
   const handleConnect = (integrationId: string) => {
-    if (connectedIntegrations.has(integrationId)) {
-      const newSet = new Set(connectedIntegrations);
-      newSet.delete(integrationId);
-      setConnectedIntegrations(newSet);
-      console.log(`Disconnected: ${integrationId}`);
+    const googleServices = ['gmail', 'google-calendar', 'google-drive'];
+    
+    if (googleServices.includes(integrationId)) {
+      handleGoogleConnect(integrationId);
     } else {
-      setConnectedIntegrations(new Set([...connectedIntegrations, integrationId]));
-      console.log(`Connected: ${integrationId}`);
+      // Handle other services (Slack, etc.)
+      if (connectedIntegrations.has(integrationId)) {
+        const newSet = new Set(connectedIntegrations);
+        newSet.delete(integrationId);
+        setConnectedIntegrations(newSet);
+        console.log(`Disconnected: ${integrationId}`);
+      } else {
+        setConnectedIntegrations(new Set([...connectedIntegrations, integrationId]));
+        console.log(`Connected: ${integrationId}`);
+      }
     }
   };
 
@@ -98,6 +248,9 @@ export const IntegrationsRevamped: React.FC = () => {
 
   const renderIntegrationCard = (integration: Integration) => {
     const isConnected = connectedIntegrations.has(integration.id);
+    const isLoading = isConnecting.has(integration.id);
+    const testResult = testResults[integration.id];
+    const hasError = testResult?.status === 'error';
     
     return (
       <div 
@@ -167,41 +320,76 @@ export const IntegrationsRevamped: React.FC = () => {
           </div>
         </div>
         
-        <button
-          onClick={() => handleConnect(integration.id)}
-          style={{
-            backgroundColor: isConnected ? '#10b981' : '#3b82f6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            padding: '8px 16px',
-            fontSize: '14px',
-            fontWeight: '500',
-            cursor: 'pointer',
-            transition: 'background-color 0.2s ease',
-            minWidth: '100px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = isConnected ? '#059669' : '#2563eb';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = isConnected ? '#10b981' : '#3b82f6';
-          }}
-        >
-          {isConnected ? (
-            <>
-              <span style={{ fontSize: '12px' }}>✓</span>
-              Connected
-            </>
-          ) : (
-            <>
-              🔗 Connect
-            </>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+          {/* API Status Indicator */}
+          {isConnected && testResult && (
+            <div style={{
+              fontSize: '12px',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              backgroundColor: hasError ? '#fef3f2' : '#f0f9ff',
+              color: hasError ? '#b91c1c' : '#0c4a6e',
+              border: `1px solid ${hasError ? '#fecaca' : '#bae6fd'}`
+            }}>
+              {hasError ? '⚠️ API Error' : '✅ API Active'}
+            </div>
           )}
-        </button>
+          
+          <button
+            onClick={() => handleConnect(integration.id)}
+            disabled={isLoading}
+            style={{
+              backgroundColor: isLoading ? '#9ca3af' : (isConnected ? '#10b981' : '#3b82f6'),
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '8px 16px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              transition: 'background-color 0.2s ease',
+              minWidth: '120px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              opacity: isLoading ? 0.7 : 1
+            }}
+            onMouseEnter={(e) => {
+              if (!isLoading) {
+                e.currentTarget.style.backgroundColor = isConnected ? '#059669' : '#2563eb';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isLoading) {
+                e.currentTarget.style.backgroundColor = isLoading ? '#9ca3af' : (isConnected ? '#10b981' : '#3b82f6');
+              }
+            }}
+          >
+            {isLoading ? (
+              <>
+                <div style={{
+                  width: '12px',
+                  height: '12px',
+                  border: '2px solid #ffffff40',
+                  borderTop: '2px solid #ffffff',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }} />
+                Connecting...
+              </>
+            ) : isConnected ? (
+              <>
+                <span style={{ fontSize: '12px' }}>✓</span>
+                Connected
+              </>
+            ) : (
+              <>
+                🔗 Connect
+              </>
+            )}
+          </button>
+        </div>
       </div>
     );
   };
