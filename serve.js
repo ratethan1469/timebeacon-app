@@ -13,7 +13,7 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "https://www.googletagmanager.com", "https://www.google-analytics.com"],
-      connectSrc: ["'self'", "https://www.google-analytics.com", "https://oauth2.googleapis.com", "https://www.googleapis.com", "https://accounts.google.com"],
+      connectSrc: ["'self'", "https://www.google-analytics.com", "https://oauth2.googleapis.com", "https://www.googleapis.com", "https://accounts.google.com", "http://localhost:*"],
       imgSrc: ["'self'", "data:", "https:"],
     },
   },

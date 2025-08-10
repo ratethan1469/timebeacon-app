@@ -45,10 +45,16 @@ export const GoogleOAuthCallback: React.FC = () => {
           throw new Error('Missing required OAuth parameters (code or state)');
         }
         
-        // Get expected state from sessionStorage
+        // Get expected state and code verifier from sessionStorage
         const expectedState = sessionStorage.getItem('google_oauth_state');
+        const codeVerifier = sessionStorage.getItem('google_oauth_code_verifier');
+        
         if (!expectedState) {
           throw new Error('Missing OAuth state in session. Please try again.');
+        }
+        
+        if (!codeVerifier) {
+          throw new Error('Missing PKCE code verifier in session. Please try again.');
         }
         
         setCallbackState({
@@ -56,11 +62,12 @@ export const GoogleOAuthCallback: React.FC = () => {
           message: 'Exchanging authorization code for access tokens...'
         });
         
-        // Exchange code for tokens
+        // Exchange code for tokens using PKCE
         const tokenResponse = await googleIntegrationService.exchangeCodeForTokens(
           code,
           state,
-          expectedState
+          expectedState,
+          codeVerifier
         );
         
         console.log('✅ OAuth tokens received successfully');
@@ -95,6 +102,7 @@ export const GoogleOAuthCallback: React.FC = () => {
         
         // Clean up session storage
         sessionStorage.removeItem('google_oauth_state');
+        sessionStorage.removeItem('google_oauth_code_verifier');
         sessionStorage.removeItem('connecting_service');
         
         // Notify parent window of success

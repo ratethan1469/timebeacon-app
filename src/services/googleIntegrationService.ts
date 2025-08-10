@@ -210,19 +210,20 @@ export class GoogleIntegrationService {
       console.log('🔧 Loading Google API configuration...');
       
       // Use environment variables with fallbacks - don't crash if missing
+      // Note: clientSecret not needed for PKCE flow
       const config: GoogleConfig = {
         clientId: import.meta.env?.VITE_GOOGLE_CLIENT_ID || '696202687856-c82e7prqdt00og14k6lp47hiutn7p9an.apps.googleusercontent.com',
-        clientSecret: import.meta.env?.VITE_GOOGLE_CLIENT_SECRET || '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',
+        clientSecret: '', // Not used in PKCE flow
         redirectUri: import.meta.env?.VITE_GOOGLE_REDIRECT_URI || 'https://app.timebeacon.io/auth/google/callback',
         apiKey: import.meta.env?.VITE_GOOGLE_API_KEY as string
       };
 
-      // Basic validation
-      if (!config.clientId || !config.clientSecret || !config.redirectUri) {
+      // Basic validation - clientSecret not required for PKCE
+      if (!config.clientId || !config.redirectUri) {
         throw new Error('Invalid Google API configuration');
       }
 
-      console.log('✅ Configuration loaded successfully');
+      console.log('✅ Configuration loaded successfully (PKCE mode)');
       return config;
     } catch (error) {
       console.error('❌ Failed to load configuration:', error);
@@ -298,13 +299,16 @@ export class GoogleIntegrationService {
   // ========================================
 
   /**
-   * Generates OAuth 2.0 authorization URL
-   * @returns Authorization URL and state parameter
+   * Generates OAuth 2.0 authorization URL using PKCE flow
+   * @returns Promise with authorization URL, state parameter, and code verifier
    */
-  public generateAuthUrl(): { url: string; state: string } {
-    console.log('🔐 Generating OAuth authorization URL...');
+  public async generateAuthUrl(): Promise<{ url: string; state: string; codeVerifier: string }> {
+    console.log('🔐 Generating OAuth authorization URL with PKCE...');
     
     const state = generateSecureState();
+    const codeVerifier = this.generateCodeVerifier();
+    const codeChallenge = await this.generateCodeChallenge(codeVerifier);
+    
     const params = new URLSearchParams({
       client_id: this.config.clientId,
       redirect_uri: this.config.redirectUri,
@@ -312,32 +316,67 @@ export class GoogleIntegrationService {
       scope: REQUIRED_SCOPES.join(' '),
       access_type: 'offline',
       prompt: 'consent',
-      state
+      state,
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256'
     });
 
     const url = `${API_ENDPOINTS.OAUTH}?${params.toString()}`;
     
-    console.log('✅ Authorization URL generated');
+    console.log('✅ Authorization URL generated with PKCE');
     console.log('🔍 DEBUG - Redirect URI being used:', this.config.redirectUri);
-    console.log('🔍 DEBUG - Full OAuth URL:', url);
-    logApiCall('OAuth', 'generateAuthUrl', true, { state, redirectUri: this.config.redirectUri });
+    logApiCall('OAuth', 'generateAuthUrl', true, { state, redirectUri: this.config.redirectUri, pkce: true });
     
-    return { url, state };
+    return { url, state, codeVerifier };
   }
 
   /**
-   * Exchanges authorization code for access tokens
+   * Generates a cryptographically secure code verifier for PKCE
+   * @returns Base64URL-encoded code verifier
+   */
+  private generateCodeVerifier(): string {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return this.base64URLEncode(array);
+  }
+
+  /**
+   * Generates code challenge from code verifier using SHA256
+   * @param verifier - Code verifier
+   * @returns Base64URL-encoded code challenge
+   */
+  private async generateCodeChallenge(verifier: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(verifier);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return this.base64URLEncode(new Uint8Array(hash));
+  }
+
+  /**
+   * Base64URL encode without padding
+   * @param buffer - Uint8Array to encode
+   * @returns Base64URL encoded string
+   */
+  private base64URLEncode(buffer: Uint8Array): string {
+    const base64 = btoa(String.fromCharCode(...buffer));
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  }
+
+  /**
+   * Exchanges authorization code for access tokens using PKCE
    * @param code - Authorization code from OAuth callback
    * @param state - State parameter for CSRF protection
    * @param expectedState - Expected state value
+   * @param codeVerifier - PKCE code verifier
    * @returns Token response
    */
   public async exchangeCodeForTokens(
     code: string, 
     state: string, 
-    expectedState: string
+    expectedState: string,
+    codeVerifier: string
   ): Promise<TokenResponse> {
-    console.log('🔄 Exchanging authorization code for tokens...');
+    console.log('🔄 Exchanging authorization code for tokens with PKCE...');
     
     // Validate state parameter to prevent CSRF attacks
     if (state !== expectedState) {
@@ -351,11 +390,19 @@ export class GoogleIntegrationService {
     try {
       const tokenData = {
         client_id: this.config.clientId,
-        client_secret: this.config.clientSecret,
         code: DOMPurify.sanitize(code),
         grant_type: 'authorization_code',
-        redirect_uri: this.config.redirectUri
+        redirect_uri: this.config.redirectUri,
+        code_verifier: codeVerifier
       };
+
+      console.log('🔍 DEBUG - Token exchange request:', {
+        client_id: tokenData.client_id,
+        grant_type: tokenData.grant_type,
+        redirect_uri: tokenData.redirect_uri,
+        code_verifier_length: codeVerifier.length,
+        code_length: code.length
+      });
 
       const response = await fetch(API_ENDPOINTS.TOKEN, {
         method: 'POST',
@@ -369,11 +416,19 @@ export class GoogleIntegrationService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        const errorMessage = errorData?.error_description || `HTTP ${response.status}: ${response.statusText}`;
+        const errorMessage = errorData?.error_description || errorData?.error || `HTTP ${response.status}: ${response.statusText}`;
+        
+        console.error('🚨 Token exchange failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMessage,
+          errorData
+        });
         
         logApiCall('OAuth', 'exchangeCodeForTokens', false, { 
           status: response.status, 
-          error: errorMessage 
+          error: errorMessage,
+          errorData
         });
         
         throw new Error(`Token exchange failed: ${errorMessage}`);
@@ -388,11 +443,12 @@ export class GoogleIntegrationService {
 
       const executionTime = Date.now() - startTime;
       
-      console.log('✅ Tokens exchanged successfully');
+      console.log('✅ Tokens exchanged successfully with PKCE');
       logApiCall('OAuth', 'exchangeCodeForTokens', true, { 
         executionTimeMs: executionTime,
         expiresIn: tokenResponse.expires_in,
-        hasRefreshToken: !!tokenResponse.refresh_token
+        hasRefreshToken: !!tokenResponse.refresh_token,
+        pkce: true
       });
 
       return tokenResponse;
@@ -407,7 +463,8 @@ export class GoogleIntegrationService {
       logApiCall('OAuth', 'exchangeCodeForTokens', false, { 
         error: error.message,
         errorType: error.name,
-        executionTimeMs: executionTime
+        executionTimeMs: executionTime,
+        pkce: true
       });
       throw error;
     }

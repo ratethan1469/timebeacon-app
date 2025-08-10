@@ -110,11 +110,12 @@ export const IntegrationsRevamped: React.FC = () => {
     try {
       console.log(`🔐 Starting OAuth flow for ${integrationId}...`);
       
-      // Generate auth URL
-      const { url, state } = googleIntegrationService.generateAuthUrl();
+      // Generate auth URL with PKCE
+      const { url, state, codeVerifier } = await googleIntegrationService.generateAuthUrl();
       
-      // Store state in sessionStorage for validation
+      // Store state and code verifier in sessionStorage for validation
       sessionStorage.setItem('google_oauth_state', state);
+      sessionStorage.setItem('google_oauth_code_verifier', codeVerifier);
       sessionStorage.setItem('connecting_service', integrationId);
       
       // Open OAuth popup
