@@ -170,7 +170,7 @@ export const IntegrationsRevamped: React.FC = () => {
         <button
           onClick={() => handleConnect(integration.id)}
           style={{
-            backgroundColor: isConnected ? '#ef4444' : '#3b82f6',
+            backgroundColor: isConnected ? '#10b981' : '#3b82f6',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
@@ -179,16 +179,28 @@ export const IntegrationsRevamped: React.FC = () => {
             fontWeight: '500',
             cursor: 'pointer',
             transition: 'background-color 0.2s ease',
-            minWidth: '90px'
+            minWidth: '100px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = isConnected ? '#dc2626' : '#2563eb';
+            e.currentTarget.style.backgroundColor = isConnected ? '#059669' : '#2563eb';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = isConnected ? '#ef4444' : '#3b82f6';
+            e.currentTarget.style.backgroundColor = isConnected ? '#10b981' : '#3b82f6';
           }}
         >
-          {isConnected ? 'Disconnect' : 'Connect'}
+          {isConnected ? (
+            <>
+              <span style={{ fontSize: '12px' }}>✓</span>
+              Connected
+            </>
+          ) : (
+            <>
+              🔗 Connect
+            </>
+          )}
         </button>
       </div>
     );
