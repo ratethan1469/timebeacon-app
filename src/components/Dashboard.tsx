@@ -811,16 +811,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', marginBottom: '4px' }}>
                       <input
                         type="checkbox"
-                        checked={dayEntries.every(entry => selectedEntries.has(entry.id))}
+                        checked={dayEntries.length > 0 && dayEntries.every(entry => selectedEntries.has(entry.id))}
+                        ref={(checkbox) => {
+                          if (checkbox) {
+                            const selectedCount = dayEntries.filter(entry => selectedEntries.has(entry.id)).length;
+                            checkbox.indeterminate = selectedCount > 0 && selectedCount < dayEntries.length;
+                          }
+                        }}
                         onChange={(e) => {
                           const newSelected = new Set(selectedEntries);
-                          dayEntries.forEach(entry => {
-                            if (e.target.checked) {
-                              newSelected.add(entry.id);
-                            } else {
+                          const allSelected = dayEntries.every(entry => selectedEntries.has(entry.id));
+                          
+                          if (allSelected) {
+                            // If all are selected, unselect all
+                            dayEntries.forEach(entry => {
                               newSelected.delete(entry.id);
-                            }
-                          });
+                            });
+                          } else {
+                            // If none or some are selected, select all
+                            dayEntries.forEach(entry => {
+                              newSelected.add(entry.id);
+                            });
+                          }
                           setSelectedEntries(newSelected);
                         }}
                         style={{ margin: 0 }}
