@@ -209,12 +209,18 @@ export class GoogleIntegrationService {
     try {
       console.log('🔧 Loading Google API configuration...');
       
+      // Use hardcoded config for production since env vars aren't available
       const config: GoogleConfig = {
-        clientId: sanitizeEnvVar(process.env.REACT_APP_GOOGLE_CLIENT_ID, 'REACT_APP_GOOGLE_CLIENT_ID'),
-        clientSecret: sanitizeEnvVar(process.env.GOOGLE_CLIENT_SECRET, 'GOOGLE_CLIENT_SECRET'),
-        redirectUri: sanitizeEnvVar(process.env.REACT_APP_GOOGLE_REDIRECT_URI, 'REACT_APP_GOOGLE_REDIRECT_URI'),
-        apiKey: process.env.REACT_APP_GOOGLE_API_KEY ? sanitizeEnvVar(process.env.REACT_APP_GOOGLE_API_KEY, 'REACT_APP_GOOGLE_API_KEY') : undefined
+        clientId: process.env.REACT_APP_GOOGLE_CLIENT_ID || '829394557114-32bedmchkqvru4gvtg52ojgef7fssusn.apps.googleusercontent.com',
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || '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',
+        redirectUri: process.env.REACT_APP_GOOGLE_REDIRECT_URI || 'https://app.timebeacon.io/auth/google/callback',
+        apiKey: process.env.REACT_APP_GOOGLE_API_KEY
       };
+
+      // Basic validation
+      if (!config.clientId || !config.clientSecret || !config.redirectUri) {
+        throw new Error('Invalid Google API configuration');
+      }
 
       console.log('✅ Configuration loaded successfully');
       return config;
