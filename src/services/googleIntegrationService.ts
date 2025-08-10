@@ -211,10 +211,10 @@ export class GoogleIntegrationService {
       
       // Use hardcoded config for production since env vars aren't available
       const config: GoogleConfig = {
-        clientId: process.env.REACT_APP_GOOGLE_CLIENT_ID || '829394557114-32bedmchkqvru4gvtg52ojgef7fssusn.apps.googleusercontent.com',
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET || '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',
-        redirectUri: process.env.REACT_APP_GOOGLE_REDIRECT_URI || 'https://app.timebeacon.io/auth/google/callback',
-        apiKey: process.env.REACT_APP_GOOGLE_API_KEY
+        clientId: (import.meta.env?.REACT_APP_GOOGLE_CLIENT_ID as string) || '829394557114-32bedmchkqvru4gvtg52ojgef7fssusn.apps.googleusercontent.com',
+        clientSecret: (import.meta.env?.GOOGLE_CLIENT_SECRET as string) || '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',
+        redirectUri: (import.meta.env?.REACT_APP_GOOGLE_REDIRECT_URI as string) || 'https://app.timebeacon.io/auth/google/callback',
+        apiKey: import.meta.env?.REACT_APP_GOOGLE_API_KEY as string
       };
 
       // Basic validation
