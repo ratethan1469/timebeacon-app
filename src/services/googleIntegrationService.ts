@@ -399,8 +399,14 @@ export class GoogleIntegrationService {
       
     } catch (error) {
       const executionTime = Date.now() - startTime;
+      console.error('🚨 Token exchange error details:', {
+        error: error.message,
+        errorType: error.name,
+        stack: error.stack
+      });
       logApiCall('OAuth', 'exchangeCodeForTokens', false, { 
         error: error.message,
+        errorType: error.name,
         executionTimeMs: executionTime
       });
       throw error;
