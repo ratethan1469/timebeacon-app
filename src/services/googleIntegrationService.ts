@@ -318,7 +318,9 @@ export class GoogleIntegrationService {
     const url = `${API_ENDPOINTS.OAUTH}?${params.toString()}`;
     
     console.log('✅ Authorization URL generated');
-    logApiCall('OAuth', 'generateAuthUrl', true, { state });
+    console.log('🔍 DEBUG - Redirect URI being used:', this.config.redirectUri);
+    console.log('🔍 DEBUG - Full OAuth URL:', url);
+    logApiCall('OAuth', 'generateAuthUrl', true, { state, redirectUri: this.config.redirectUri });
     
     return { url, state };
   }
