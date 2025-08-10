@@ -813,7 +813,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         type="checkbox"
                         checked={dayEntries.every(entry => selectedEntries.has(entry.id))}
                         onChange={(e) => {
-                          dayEntries.forEach(entry => handleEntrySelect(entry.id, e.target.checked));
+                          const newSelected = new Set(selectedEntries);
+                          dayEntries.forEach(entry => {
+                            if (e.target.checked) {
+                              newSelected.add(entry.id);
+                            } else {
+                              newSelected.delete(entry.id);
+                            }
+                          });
+                          setSelectedEntries(newSelected);
                         }}
                         style={{ margin: 0 }}
                       />
