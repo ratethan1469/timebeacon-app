@@ -209,11 +209,11 @@ export class GoogleIntegrationService {
     try {
       console.log('🔧 Loading Google API configuration...');
       
-      // Get configuration from environment or throw error
+      // Use environment variables with fallbacks - don't crash if missing
       const config: GoogleConfig = {
-        clientId: sanitizeEnvVar(import.meta.env?.VITE_GOOGLE_CLIENT_ID, 'VITE_GOOGLE_CLIENT_ID'),
-        clientSecret: sanitizeEnvVar(import.meta.env?.VITE_GOOGLE_CLIENT_SECRET, 'VITE_GOOGLE_CLIENT_SECRET'),
-        redirectUri: sanitizeEnvVar(import.meta.env?.VITE_GOOGLE_REDIRECT_URI, 'VITE_GOOGLE_REDIRECT_URI'),
+        clientId: import.meta.env?.VITE_GOOGLE_CLIENT_ID || '696202687856-c82e7prqdt00og14k6lp47hiutn7p9an.apps.googleusercontent.com',
+        clientSecret: import.meta.env?.VITE_GOOGLE_CLIENT_SECRET || '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',
+        redirectUri: import.meta.env?.VITE_GOOGLE_REDIRECT_URI || 'https://app.timebeacon.io/auth/google/callback',
         apiKey: import.meta.env?.VITE_GOOGLE_API_KEY as string
       };
 
