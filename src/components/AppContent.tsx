@@ -6,7 +6,7 @@ import { Reports } from './Reports';
 import EnhancedReports from './EnhancedReports';
 import PermissionsManager from './PermissionsManager';
 import { SettingsSimplified } from './SettingsSimplified';
-import { Integrations } from './Integrations';
+import { IntegrationsRevamped } from './IntegrationsRevamped';
 import { PrivacyOwnership } from './PrivacyOwnership';
 import { AIInsights } from './AIInsights';
 import { NavigationItem } from '../types';
@@ -112,12 +112,7 @@ export function AppContent() {
           />
         );
       case 'integrations':
-        return (
-          <Integrations 
-            integrations={timeTracker.settings.integrations}
-            onToggleIntegration={timeTracker.toggleIntegration}
-          />
-        );
+        return <IntegrationsRevamped />;
       case 'permissions':
         return <PermissionsManager />;
       case 'settings':
