@@ -1,0 +1,632 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TimeBeacon Notification Payloads",
+  "description": "Schemas for all notification types in the TimeBeacon intelligent time tracking system",
+  
+  "definitions": {
+    "baseNotification": {
+      "type": "object",
+      "required": ["id", "type", "timestamp", "user_id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique notification identifier"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "time_entry_created",
+            "time_entry_updated", 
+            "import_completed",
+            "import_failed",
+            "ai_processing_completed",
+            "project_match_suggested",
+            "duration_estimate_ready",
+            "weekly_summary",
+            "productivity_insight",
+            "missing_time_reminder",
+            "billable_hours_milestone"
+          ]
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "read": {
+          "type": "boolean",
+          "default": false
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "urgent"],
+          "default": "medium"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this notification should be automatically removed"
+        }
+      }
+    },
+
+    "timeEntryCreatedNotification": {
+      "allOf": [
+        { "$ref": "#/definitions/baseNotification" },
+        {
+          "properties": {
+            "type": { "const": "time_entry_created" },
+            "data": {
+              "type": "object",
+              "required": ["time_entry_id", "source", "title", "duration_minutes"],
+              "properties": {
+                "time_entry_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "source": {
+                  "type": "string",
+                  "enum": ["gmail", "calendar", "drive", "zoom", "manual"]
+                },
+                "title": {
+                  "type": "string",
+                  "maxLength": 255
+                },
+                "duration_minutes": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "project_name": {
+                  "type": "string"
+                },
+                "client_name": {
+                  "type": "string"
+                },
+                "confidence_score": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "is_ai_generated": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "message": {
+              "type": "string",
+              "example": "New time entry created: 45min meeting with Acme Corp"
+            },
+            "action_url": {
+              "type": "string",
+              "format": "uri",
+              "example": "/time-entries/123e4567-e89b-12d3-a456-426614174000"
+            }
+          }
+        }
+      ]
+    },
+
+    "importCompletedNotification": {
+      "allOf": [
+        { "$ref": "#/definitions/baseNotification" },
+        {
+          "properties": {
+            "type": { "const": "import_completed" },
+            "data": {
+              "type": "object",
+              "required": ["import_type", "imported_count", "processing_time_ms"],
+              "properties": {
+                "import_type": {
+                  "type": "string",
+                  "enum": ["gmail", "calendar", "drive", "zoom"]
+                },
+                "imported_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "processed_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "failed_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "processing_time_ms": {
+                  "type": "integer"
+                },
+                "date_range": {
+                  "type": "object",
+                  "properties": {
+                    "start_date": { "type": "string", "format": "date" },
+                    "end_date": { "type": "string", "format": "date" }
+                  }
+                },
+                "total_time_minutes": {
+                  "type": "integer",
+                  "description": "Total time tracked from this import"
+                }
+              }
+            },
+            "message": {
+              "type": "string",
+              "example": "Gmail import completed: 23 emails processed, 4.5 hours tracked"
+            },
+            "action_url": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        }
+      ]
+    },
+
+    "aiProcessingCompletedNotification": {
+      "allOf": [
+        { "$ref": "#/definitions/baseNotification" },
+        {
+          "properties": {
+            "type": { "const": "ai_processing_completed" },
+            "data": {
+              "type": "object",
+              "required": ["processing_type", "processed_count"],
+              "properties": {
+                "processing_type": {
+                  "type": "string",
+                  "enum": ["duration_estimation", "project_matching", "summarization", "batch_processing"]
+                },
+                "processed_count": {
+                  "type": "integer"
+                },
+                "avg_confidence_score": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "high_confidence_count": {
+                  "type": "integer",
+                  "description": "Number of items with >80% confidence"
+                },
+                "needs_review_count": {
+                  "type": "integer",
+                  "description": "Number of items that need manual review"
+                },
+                "processing_time_ms": {
+                  "type": "integer"
+                },
+                "cost_usd": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Estimated LLM processing cost"
+                }
+              }
+            },
+            "message": {
+              "type": "string",
+              "example": "AI processing complete: 15 time entries analyzed, 12 high confidence matches"
+            }
+          }
+        }
+      ]
+    },
+
+    "projectMatchSuggestedNotification": {
+      "allOf": [
+        { "$ref": "#/definitions/baseNotification" },
+        {
+          "properties": {
+            "type": { "const": "project_match_suggested" },
+            "priority": { "const": "high" },
+            "data": {
+              "type": "object",
+              "required": ["time_entry_id", "suggested_project", "confidence_score"],
+              "properties": {
+                "time_entry_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "current_project": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "name": { "type": "string" }
+                  }
+                },
+                "suggested_project": {
+                  "type": "object",
+                  "required": ["id", "name", "client_name"],
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "name": { "type": "string" },
+                    "client_name": { "type": "string" }
+                  }
+                },
+                "confidence_score": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "reasoning": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "time_entry_title": {
+                  "type": "string"
+                },
+                "alternatives": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "project_id": { "type": "string", "format": "uuid" },
+                      "project_name": { "type": "string" },
+                      "confidence_score": { "type": "number" }
+                    }
+                  },
+                  "maxItems": 3
+                }
+              }
+            },
+            "message": {
+              "type": "string",
+              "example": "Project match suggestion: 'Acme CRM Integration' (85% confidence)"
+            },
+            "actions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string", "enum": ["accept", "reject", "review"] },
+                  "label": { "type": "string" },
+                  "url": { "type": "string", "format": "uri" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "weeklySummaryNotification": {
+      "allOf": [
+        { "$ref": "#/definitions/baseNotification" },
+        {
+          "properties": {
+            "type": { "const": "weekly_summary" },
+            "priority": { "const": "low" },
+            "data": {
+              "type": "object",
+              "required": ["week_start", "total_hours", "billable_hours"],
+              "properties": {
+                "week_start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "total_hours": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "billable_hours": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "top_projects": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "project_name": { "type": "string" },
+                      "client_name": { "type": "string" },
+                      "hours": { "type": "number" },
+                      "percentage": { "type": "number" }
+                    }
+                  },
+                  "maxItems": 5
+                },
+                "productivity_score": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "email_time_hours": {
+                  "type": "number"
+                },
+                "meeting_time_hours": {
+                  "type": "number"
+                },
+                "document_time_hours": {
+                  "type": "number"
+                },
+                "ai_insights": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 3
+                }
+              }
+            },
+            "message": {
+              "type": "string",
+              "example": "Weekly summary: 42.5 hours tracked (38.2 billable) across 8 projects"
+            }
+          }
+        }
+      ]
+    },
+
+    "productivityInsightNotification": {
+      "allOf": [
+        { "$ref": "#/definitions/baseNotification" },
+        {
+          "properties": {
+            "type": { "const": "productivity_insight" },
+            "data": {
+              "type": "object",
+              "required": ["insight_type", "metric", "recommendation"],
+              "properties": {
+                "insight_type": {
+                  "type": "string",
+                  "enum": [
+                    "meeting_overload",
+                    "email_time_spike", 
+                    "project_context_switching",
+                    "billable_ratio_low",
+                    "productivity_trend_down",
+                    "break_recommendation"
+                  ]
+                },
+                "metric": {
+                  "type": "object",
+                  "properties": {
+                    "current_value": { "type": "number" },
+                    "previous_value": { "type": "number" },
+                    "change_percentage": { "type": "number" },
+                    "period": { "type": "string", "enum": ["day", "week", "month"] }
+                  }
+                },
+                "recommendation": {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                "action_items": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "maxItems": 3
+                },
+                "supporting_data": {
+                  "type": "object",
+                  "properties": {
+                    "charts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": { "type": "string" },
+                          "data_url": { "type": "string", "format": "uri" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "message": {
+              "type": "string",
+              "example": "Productivity insight: Email time increased 40% this week"
+            }
+          }
+        }
+      ]
+    },
+
+    "missingTimeReminderNotification": {
+      "allOf": [
+        { "$ref": "#/definitions/baseNotification" },
+        {
+          "properties": {
+            "type": { "const": "missing_time_reminder" },
+            "priority": { "const": "medium" },
+            "data": {
+              "type": "object",
+              "required": ["date", "detected_gaps"],
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "detected_gaps": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "start_time": { "type": "string", "format": "time" },
+                      "end_time": { "type": "string", "format": "time" },
+                      "duration_minutes": { "type": "integer" },
+                      "suggested_activities": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "type": { "type": "string" },
+                            "description": { "type": "string" },
+                            "confidence": { "type": "number" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "total_untracked_minutes": {
+                  "type": "integer"
+                }
+              }
+            },
+            "message": {
+              "type": "string",
+              "example": "Missing time detected: 2.5 hours untracked on March 15"
+            }
+          }
+        }
+      ]
+    },
+
+    "billableHoursMilestoneNotification": {
+      "allOf": [
+        { "$ref": "#/definitions/baseNotification" },
+        {
+          "properties": {
+            "type": { "const": "billable_hours_milestone" },
+            "priority": { "const": "low" },
+            "data": {
+              "type": "object",
+              "required": ["milestone_type", "hours", "period"],
+              "properties": {
+                "milestone_type": {
+                  "type": "string",
+                  "enum": ["daily_goal", "weekly_goal", "monthly_goal", "project_milestone"]
+                },
+                "hours": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "goal_hours": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "percentage": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "period": {
+                  "type": "string",
+                  "enum": ["day", "week", "month"]
+                },
+                "project_name": {
+                  "type": "string"
+                },
+                "client_name": {
+                  "type": "string"
+                }
+              }
+            },
+            "message": {
+              "type": "string",
+              "example": "Milestone reached: 40 billable hours this week! 🎉"
+            }
+          }
+        }
+      ]
+    },
+
+    "webPushNotification": {
+      "type": "object",
+      "required": ["title", "body"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "body": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "icon": {
+          "type": "string",
+          "format": "uri"
+        },
+        "badge": {
+          "type": "string",
+          "format": "uri"
+        },
+        "image": {
+          "type": "string",
+          "format": "uri"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "action": { "type": "string" },
+              "title": { "type": "string", "maxLength": 30 },
+              "icon": { "type": "string", "format": "uri" }
+            }
+          },
+          "maxItems": 2
+        },
+        "tag": {
+          "type": "string",
+          "description": "Identifier for grouping notifications"
+        },
+        "requireInteraction": {
+          "type": "boolean",
+          "default": false
+        },
+        "silent": {
+          "type": "boolean",
+          "default": false
+        },
+        "data": {
+          "type": "object",
+          "description": "Additional data to pass to the notification handler"
+        }
+      }
+    },
+
+    "emailNotification": {
+      "type": "object",
+      "required": ["to", "subject", "template"],
+      "properties": {
+        "to": {
+          "type": "string",
+          "format": "email"
+        },
+        "subject": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "template": {
+          "type": "string",
+          "enum": [
+            "weekly_summary",
+            "import_completed",
+            "missing_time_reminder",
+            "productivity_insights",
+            "milestone_achieved"
+          ]
+        },
+        "template_data": {
+          "type": "object",
+          "description": "Variables to populate the email template"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "normal", "high"],
+          "default": "normal"
+        },
+        "scheduled_send": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When to send this email (for scheduled notifications)"
+        }
+      }
+    }
+  },
+
+  "oneOf": [
+    { "$ref": "#/definitions/timeEntryCreatedNotification" },
+    { "$ref": "#/definitions/importCompletedNotification" },
+    { "$ref": "#/definitions/aiProcessingCompletedNotification" },
+    { "$ref": "#/definitions/projectMatchSuggestedNotification" },
+    { "$ref": "#/definitions/weeklySummaryNotification" },
+    { "$ref": "#/definitions/productivityInsightNotification" },
+    { "$ref": "#/definitions/missingTimeReminderNotification" },
+    { "$ref": "#/definitions/billableHoursMilestoneNotification" }
+  ]
+}

@@ -1,0 +1,693 @@
+openapi: 3.0.3
+info:
+  title: TimeBeacon Intelligent Time Tracking API
+  description: |
+    Production-ready API for intelligent time tracking with LLM-powered duration estimation,
+    project matching, and automated data import from email, calendar, and document sources.
+  version: 1.0.0
+  contact:
+    name: TimeBeacon API Support
+    email: api@timebeacon.io
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.timebeacon.io/v1
+    description: Production server
+  - url: http://localhost:3001/api/v1
+    description: Development server
+
+security:
+  - BearerAuth: []
+
+paths:
+  # Authentication & OAuth
+  /auth/google/url:
+    get:
+      tags: [Authentication]
+      summary: Get Google OAuth authorization URL
+      responses:
+        '200':
+          description: OAuth URL generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthUrlResponse'
+
+  /auth/google/callback:
+    get:
+      tags: [Authentication]
+      summary: Handle Google OAuth callback
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            text/html:
+              schema:
+                type: string
+
+  # Time Entries
+  /time-entries:
+    get:
+      tags: [Time Entries]
+      summary: List time entries
+      parameters:
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: project_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/TimeEntryStatus'
+      responses:
+        '200':
+          description: Time entries retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntriesResponse'
+
+    post:
+      tags: [Time Entries]
+      summary: Create a new time entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTimeEntryRequest'
+      responses:
+        '201':
+          description: Time entry created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+
+  /time-entries/{id}:
+    get:
+      tags: [Time Entries]
+      summary: Get a specific time entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Time entry retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+
+    put:
+      tags: [Time Entries]
+      summary: Update a time entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTimeEntryRequest'
+      responses:
+        '200':
+          description: Time entry updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+
+  # AI Processing
+  /ai/estimate-duration:
+    post:
+      tags: [AI Processing]
+      summary: Estimate time duration using LLM
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DurationEstimationRequest'
+      responses:
+        '200':
+          description: Duration estimated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DurationEstimationResponse'
+
+  /ai/match-project:
+    post:
+      tags: [AI Processing]
+      summary: Match activity to project using LLM
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectMatchingRequest'
+      responses:
+        '200':
+          description: Project matched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMatchingResponse'
+
+  /ai/summarize:
+    post:
+      tags: [AI Processing]
+      summary: Generate AI summary for activity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SummarizationRequest'
+      responses:
+        '200':
+          description: Summary generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummarizationResponse'
+
+  # Data Import
+  /import/gmail:
+    post:
+      tags: [Data Import]
+      summary: Import and process Gmail emails
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GmailImportRequest'
+      responses:
+        '200':
+          description: Gmail import completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResponse'
+
+  /import/calendar:
+    post:
+      tags: [Data Import]
+      summary: Import and process calendar events
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarImportRequest'
+      responses:
+        '200':
+          description: Calendar import completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResponse'
+
+  /import/drive:
+    post:
+      tags: [Data Import]
+      summary: Import and process Google Drive activity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriveImportRequest'
+      responses:
+        '200':
+          description: Drive import completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResponse'
+
+  # Projects & Clients
+  /projects:
+    get:
+      tags: [Projects]
+      summary: List projects
+      responses:
+        '200':
+          description: Projects retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+
+    post:
+      tags: [Projects]
+      summary: Create a new project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectRequest'
+      responses:
+        '201':
+          description: Project created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+
+  /clients:
+    get:
+      tags: [Clients]
+      summary: List clients
+      responses:
+        '200':
+          description: Clients retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Client'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # Core Entities
+    TimeEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+          nullable: true
+        client_id:
+          type: string
+          format: uuid
+          nullable: true
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+        duration_minutes:
+          type: integer
+          nullable: true
+        title:
+          type: string
+          maxLength: 500
+        description:
+          type: string
+        activity_type:
+          $ref: '#/components/schemas/ActivityType'
+        confidence_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+        ai_summary:
+          type: string
+          nullable: true
+        source_type:
+          $ref: '#/components/schemas/SourceType'
+        status:
+          $ref: '#/components/schemas/TimeEntryStatus'
+        is_billable:
+          type: boolean
+        is_ai_generated:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 255
+        client_id:
+          type: string
+          format: uuid
+          nullable: true
+        keywords:
+          type: array
+          items:
+            type: string
+        hourly_rate:
+          type: number
+          format: float
+        is_active:
+          type: boolean
+
+    Client:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 255
+        domain:
+          type: string
+          nullable: true
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+
+    # Enums
+    ActivityType:
+      type: string
+      enum: [email, meeting, document, call, manual]
+
+    SourceType:
+      type: string
+      enum: [gmail, calendar, drive, zoom, manual]
+
+    TimeEntryStatus:
+      type: string
+      enum: [active, completed, billed, archived]
+
+    # Request/Response Bodies
+    CreateTimeEntryRequest:
+      type: object
+      required: [start_time, activity_type]
+      properties:
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        title:
+          type: string
+          maxLength: 500
+        description:
+          type: string
+        activity_type:
+          $ref: '#/components/schemas/ActivityType'
+        project_id:
+          type: string
+          format: uuid
+        is_billable:
+          type: boolean
+          default: true
+
+    UpdateTimeEntryRequest:
+      type: object
+      properties:
+        end_time:
+          type: string
+          format: date-time
+        title:
+          type: string
+          maxLength: 500
+        description:
+          type: string
+        project_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/TimeEntryStatus'
+        is_billable:
+          type: boolean
+
+    # AI Processing
+    DurationEstimationRequest:
+      type: object
+      required: [content, activity_type]
+      properties:
+        content:
+          type: string
+          description: Email content, meeting details, or document info
+        activity_type:
+          $ref: '#/components/schemas/ActivityType'
+        context:
+          type: object
+          description: Additional context (attendees, word count, etc.)
+
+    DurationEstimationResponse:
+      type: object
+      properties:
+        estimated_minutes:
+          type: integer
+        confidence_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+        reasoning:
+          type: string
+        bounds:
+          type: object
+          properties:
+            min_minutes:
+              type: integer
+            max_minutes:
+              type: integer
+
+    ProjectMatchingRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+        email_domain:
+          type: string
+        attendees:
+          type: array
+          items:
+            type: string
+        available_projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/Project'
+
+    ProjectMatchingResponse:
+      type: object
+      properties:
+        matched_project_id:
+          type: string
+          format: uuid
+          nullable: true
+        confidence_score:
+          type: number
+          format: float
+        reasoning:
+          type: string
+        alternatives:
+          type: array
+          items:
+            type: object
+            properties:
+              project_id:
+                type: string
+                format: uuid
+              confidence_score:
+                type: number
+                format: float
+
+    # Import Requests
+    GmailImportRequest:
+      type: object
+      required: [start_date]
+      properties:
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        max_emails:
+          type: integer
+          default: 100
+        query:
+          type: string
+          description: Gmail search query
+
+    CalendarImportRequest:
+      type: object
+      required: [start_date]
+      properties:
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        calendar_id:
+          type: string
+          default: primary
+
+    ImportResponse:
+      type: object
+      properties:
+        imported_count:
+          type: integer
+        processed_count:
+          type: integer
+        failed_count:
+          type: integer
+        time_entries_created:
+          type: array
+          items:
+            type: string
+            format: uuid
+        processing_time_ms:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string
+
+    # Standard Responses
+    TimeEntriesResponse:
+      type: object
+      properties:
+        time_entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeEntry'
+        total_count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+
+    OAuthUrlResponse:
+      type: object
+      properties:
+        auth_url:
+          type: string
+          format: uri
+        state:
+          type: string
+        success:
+          type: boolean
+
+    CreateProjectRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        client_id:
+          type: string
+          format: uuid
+        keywords:
+          type: array
+          items:
+            type: string
+        hourly_rate:
+          type: number
+          format: float
+
+    SummarizationRequest:
+      type: object
+      required: [content, content_type]
+      properties:
+        content:
+          type: string
+        content_type:
+          type: string
+          enum: [email, meeting, document]
+        max_length:
+          type: integer
+          default: 100
+
+    SummarizationResponse:
+      type: object
+      properties:
+        summary:
+          type: string
+        key_points:
+          type: array
+          items:
+            type: string
+        confidence_score:
+          type: number
+          format: float
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        code:
+          type: integer
+        details:
+          type: object
+
+tags:
+  - name: Authentication
+    description: OAuth and authentication endpoints
+  - name: Time Entries
+    description: Core time tracking functionality
+  - name: AI Processing
+    description: LLM-powered intelligence features
+  - name: Data Import
+    description: Automated data import from external sources
+  - name: Projects
+    description: Project management
+  - name: Clients
+    description: Client management

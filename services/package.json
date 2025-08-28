@@ -1,0 +1,40 @@
+{
+  "name": "timebeacon-intelligent-service",
+  "version": "1.0.0",
+  "description": "Intelligent time tracking service with LLM integration",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "migrate": "ts-node src/database/migrate.ts"
+  },
+  "dependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "axios": "^1.6.5",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "joi": "^17.12.0",
+    "pg": "^8.11.3",
+    "winston": "^3.11.0",
+    "openai": "^4.24.7"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.11",
+    "@types/pg": "^8.10.9",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
