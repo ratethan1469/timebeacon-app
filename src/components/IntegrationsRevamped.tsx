@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { googleIntegrationService, ApiTestResult } from '../services/googleIntegrationService';
+import { intelligentDataImportService, ImportResult } from '../services/intelligentDataImport';
+import { useTimeTracker } from '../hooks/useTimeTracker';
 
 interface Integration {
   id: string;
@@ -84,16 +86,25 @@ export const IntegrationsRevamped: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState<Set<string>>(new Set());
   const [testResults, setTestResults] = useState<{ [key: string]: ApiTestResult }>({});
   const [authStatus, setAuthStatus] = useState(googleIntegrationService.getAuthStatus());
+  const [isImporting, setIsImporting] = useState(false);
+  
+  // Get access to the time tracker hook
+  const { addTimeEntry } = useTimeTracker();
 
   // Check authentication status on mount
   useEffect(() => {
     const status = googleIntegrationService.getAuthStatus();
     setAuthStatus(status);
     
-    if (status.isAuthenticated) {
-      // If authenticated, mark Google services as connected
+    // Check for stored OAuth tokens from our backend
+    const storedTokens = localStorage.getItem('google_oauth_tokens');
+    const userInfo = localStorage.getItem('google_user_info');
+    
+    if (storedTokens && userInfo || status.isAuthenticated) {
+      // If we have tokens or authenticated, mark Google services as connected
       const googleServices = ['gmail', 'google-calendar', 'google-drive'];
       setConnectedIntegrations(new Set(googleServices));
+      console.log('✅ Found existing authentication, marking services as connected');
     }
   }, []);
 
@@ -149,13 +160,29 @@ export const IntegrationsRevamped: React.FC = () => {
           clearInterval(checkClosed);
           popup.close();
           
+          console.log('🎉 OAuth Success! Received tokens and user info:', event.data);
+          
+          // Store the encrypted tokens and user info
+          if (event.data.tokens && event.data.userInfo) {
+            localStorage.setItem('google_oauth_tokens', JSON.stringify(event.data.tokens));
+            localStorage.setItem('google_user_info', JSON.stringify(event.data.userInfo));
+            console.log('✅ Stored encrypted tokens and user info');
+          }
+          
           // Mark as connected and run tests
           const googleServices = ['gmail', 'google-calendar', 'google-drive'];
           setConnectedIntegrations(new Set(googleServices));
-          setAuthStatus(googleIntegrationService.getAuthStatus());
+          
+          // Update auth status
+          const newAuthStatus = googleIntegrationService.getAuthStatus();
+          setAuthStatus(newAuthStatus);
+          console.log('🔄 Updated auth status:', newAuthStatus);
           
           // Run API tests
           runApiTests();
+          
+          // Trigger automatic data import after connection
+          triggerDataImport();
           
           window.removeEventListener('message', messageListener);
         } else if (event.data.type === 'OAUTH_ERROR') {
@@ -182,13 +209,17 @@ export const IntegrationsRevamped: React.FC = () => {
   };
 
   const handleDisconnect = (integrationId: string) => {
-    // Clear tokens and update state
+    // Clear all stored tokens and data
     googleIntegrationService.clearTokens();
+    localStorage.removeItem('google_oauth_tokens');
+    localStorage.removeItem('google_user_info');
+    
+    // Update state
     setConnectedIntegrations(new Set());
     setAuthStatus(googleIntegrationService.getAuthStatus());
     setTestResults({});
     
-    console.log(`Disconnected from Google services`);
+    console.log(`✅ Disconnected from Google services and cleared all tokens`);
   };
 
   const runApiTests = async () => {
@@ -244,12 +275,77 @@ export const IntegrationsRevamped: React.FC = () => {
     }
   };
 
+  const triggerDataImport = async () => {
+    console.log('📊 Starting automatic data import...');
+    setIsImporting(true);
+    
+    try {
+      // Check if we have stored tokens
+      const storedTokens = localStorage.getItem('google_oauth_tokens');
+      const userInfo = localStorage.getItem('google_user_info');
+      
+      if (!storedTokens || !userInfo) {
+        console.log('❌ No tokens found for data import');
+        setIsImporting(false);
+        return;
+      }
+
+      const tokens = JSON.parse(storedTokens);
+      console.log('✅ Found stored tokens, starting data import...');
+      
+      let totalImported = 0;
+      const errors: string[] = [];
+      
+      // Import this week's Gmail data
+      const gmailResult = await intelligentDataImportService.importGmailData(tokens);
+      if (gmailResult.success) {
+        // Add each time entry to the tracker
+        gmailResult.timeEntries.forEach(entry => {
+          addTimeEntry(entry);
+          totalImported++;
+        });
+        console.log(`📧 Added ${gmailResult.timeEntries.length} email time entries`);
+      } else {
+        errors.push(...gmailResult.errors);
+      }
+      
+      // Import this week's Calendar data  
+      const calendarResult = await intelligentDataImportService.importCalendarData(tokens);
+      if (calendarResult.success) {
+        // Add each time entry to the tracker
+        calendarResult.timeEntries.forEach(entry => {
+          addTimeEntry(entry);
+          totalImported++;
+        });
+        console.log(`📅 Added ${calendarResult.timeEntries.length} calendar time entries`);
+      } else {
+        errors.push(...calendarResult.errors);
+      }
+      
+      console.log(`🎉 Automatic data import completed! Total entries: ${totalImported}`);
+      
+      // Show success notification
+      if (totalImported > 0) {
+        alert(`🎉 Connected successfully! Imported ${totalImported} time entries from your emails and calendar events this week. Check your dashboard to see them!`);
+      } else {
+        alert('✅ Connected successfully! No new time entries found for this week. Try using the individual import buttons in the Gmail and Calendar components.');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error during automatic data import:', error);
+      alert(`❌ Import failed: ${error.message}`);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+
   const googleIntegrations = integrations.filter(i => i.category === 'google');
   const otherIntegrations = integrations.filter(i => i.category !== 'google');
 
   const renderIntegrationCard = (integration: Integration) => {
     const isConnected = connectedIntegrations.has(integration.id);
-    const isLoading = isConnecting.has(integration.id);
+    const isLoading = isConnecting.has(integration.id) || isImporting;
     const testResult = testResults[integration.id];
     const hasError = testResult?.status === 'error';
     
@@ -377,7 +473,7 @@ export const IntegrationsRevamped: React.FC = () => {
                   borderRadius: '50%',
                   animation: 'spin 1s linear infinite'
                 }} />
-                Connecting...
+                {isImporting ? 'Importing...' : 'Connecting...'}
               </>
             ) : isConnected ? (
               <>

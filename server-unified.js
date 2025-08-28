@@ -436,6 +436,158 @@ app.post('/api/zoom/meetings', async (req, res) => {
 // GOOGLE API ENDPOINTS
 // =================
 
+app.post('/api/google/gmail/messages', async (req, res) => {
+  try {
+    const { tokens, startDate, endDate, maxResults } = req.body;
+    
+    if (!tokens) {
+      return res.status(401).json({ 
+        error: 'No authentication tokens provided',
+        success: false 
+      });
+    }
+
+    const parsedTokens = JSON.parse(tokens);
+    const decryptedTokens = {
+      access_token: decryptToken(parsedTokens.access_token),
+      refresh_token: parsedTokens.refresh_token ? decryptToken(parsedTokens.refresh_token) : null,
+      expiry_date: parsedTokens.expiry_date
+    };
+
+    oauth2Client.setCredentials(decryptedTokens);
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    
+    // Build search query for date range
+    let query = '';
+    if (startDate && endDate) {
+      const start = new Date(startDate).toISOString().split('T')[0];
+      const end = new Date(endDate).toISOString().split('T')[0];
+      query = `after:${start.replace(/-/g, '/')} before:${end.replace(/-/g, '/')}`;
+    }
+    
+    // Get list of messages
+    const listResponse = await gmail.users.messages.list({
+      userId: 'me',
+      q: query,
+      maxResults: maxResults || 50
+    });
+
+    const messages = [];
+    const messageIds = listResponse.data.messages || [];
+    
+    // Get details for each message (in batches to avoid rate limits)
+    for (const messageRef of messageIds) {
+      try {
+        const messageResponse = await gmail.users.messages.get({
+          userId: 'me',
+          id: messageRef.id,
+          format: 'metadata',
+          metadataHeaders: ['From', 'To', 'Subject', 'Date']
+        });
+
+        const message = messageResponse.data;
+        const headers = message.payload.headers;
+        
+        const getHeader = (name) => {
+          const header = headers.find(h => h.name.toLowerCase() === name.toLowerCase());
+          return header ? header.value : '';
+        };
+
+        // Get snippet for word count estimation
+        const snippetResponse = await gmail.users.messages.get({
+          userId: 'me',
+          id: messageRef.id,
+          format: 'full'
+        });
+
+        const snippet = snippetResponse.data.snippet || '';
+        const wordCount = snippet.split(' ').length * 3; // Rough estimate
+        
+        messages.push({
+          id: message.id,
+          subject: getHeader('Subject'),
+          sender: getHeader('From'),
+          recipients: getHeader('To').split(',').map(r => r.trim()),
+          timestamp: new Date(parseInt(message.internalDate)).toISOString(),
+          wordCount,
+          snippet,
+          threadLength: 1 // Simplified for now
+        });
+        
+        // Add small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+      } catch (msgError) {
+        console.error(`Error fetching message ${messageRef.id}:`, msgError);
+      }
+    }
+
+    res.json({
+      success: true,
+      messages: messages
+    });
+  } catch (error) {
+    console.error('Error fetching Gmail messages:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch Gmail messages',
+      success: false 
+    });
+  }
+});
+
+app.post('/api/google/calendar/events', async (req, res) => {
+  try {
+    const { tokens, timeMin, timeMax, maxResults } = req.body;
+    
+    if (!tokens) {
+      return res.status(401).json({ 
+        error: 'No authentication tokens provided',
+        success: false 
+      });
+    }
+
+    const parsedTokens = JSON.parse(tokens);
+    const decryptedTokens = {
+      access_token: decryptToken(parsedTokens.access_token),
+      refresh_token: parsedTokens.refresh_token ? decryptToken(parsedTokens.refresh_token) : null,
+      expiry_date: parsedTokens.expiry_date
+    };
+
+    oauth2Client.setCredentials(decryptedTokens);
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    
+    const response = await calendar.events.list({
+      calendarId: 'primary',
+      timeMin: timeMin || new Date().toISOString(),
+      timeMax: timeMax || new Date(Date.now() + 7*24*60*60*1000).toISOString(),
+      maxResults: maxResults || 50,
+      singleEvents: true,
+      orderBy: 'startTime',
+    });
+
+    const events = (response.data.items || []).map(event => ({
+      id: event.id,
+      summary: event.summary,
+      start: event.start.dateTime || event.start.date,
+      end: event.end.dateTime || event.end.date,
+      attendees: (event.attendees || []).map(a => a.email).filter(Boolean),
+      description: event.description,
+      location: event.location
+    }));
+
+    res.json({
+      success: true,
+      events: events
+    });
+  } catch (error) {
+    console.error('Error fetching Calendar events:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch calendar events',
+      success: false 
+    });
+  }
+});
+
 app.get('/api/google/calendar/events', async (req, res) => {
   try {
     const { tokens } = req.query;
