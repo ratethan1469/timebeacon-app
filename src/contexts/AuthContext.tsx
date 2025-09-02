@@ -3,6 +3,7 @@ import { authService } from '../services/auth';
 import { sessionManager } from '../services/sessionManager';
 import { routingService } from '../services/routing';
 import { AuthState, LoginRequest, User, Company } from '../types/auth';
+import apiService from '../services/apiService';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
@@ -48,9 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const session = sessionManager.getSession();
       
       if (session && sessionManager.isSessionValid()) {
-        const permissions = authService.hasPermission ? 
-          authService.getUserPermissions?.(session.user.role, session.user.permissions || []) || [] :
-          session.user.permissions || [];
+        const permissions = session.user.permissions || [];
         
         setAuthState({
           user: session.user,
@@ -75,17 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      // Extract route params for context
-      const routeParams = routingService.extractRouteParams();
-      
-      const loginRequest: LoginRequest = {
-        email,
-        password,
-        accountId: routeParams?.accountId,
-        visitorId: routeParams?.visitorId,
-      };
-
-      const response = await authService.login(loginRequest);
+      const response = await apiService.login(email, password);
       
       // Store session securely
       sessionManager.setSession({
@@ -96,9 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         expiresIn: response.expiresIn,
       });
       
-      const permissions = authService.hasPermission ? 
-        authService.getUserPermissions?.(response.user.role, response.user.permissions || []) || [] :
-        response.user.permissions || [];
+      const permissions = response.user.permissions || [];
       
       const newState: AuthState = {
         user: response.user,

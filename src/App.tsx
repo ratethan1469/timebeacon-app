@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import Login from './components/Login';
+import { CompanySignup } from './components/CompanySignup';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AppContent } from './components/AppContent';
 import GoogleOAuthCallback from './components/GoogleOAuthCallback';
@@ -13,6 +14,7 @@ function App() {
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<CompanySignup />} />
             <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
             
             {/* Multi-tenant routes */}
