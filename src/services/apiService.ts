@@ -1,5 +1,5 @@
 // API Service for connecting to MongoDB backend
-const API_BASE_URL = 'http://localhost:3003/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3003/api';
 
 // Store auth token
 let authToken: string | null = localStorage.getItem('auth_token');
