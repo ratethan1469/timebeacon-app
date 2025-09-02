@@ -11,7 +11,7 @@
     }
   ],
   "env": {
-    "VITE_API_URL": "https://timebeacon-backend.onrender.com/api",
+    "VITE_API_URL": "https://timebeacon-api-d2a0e5juibrs73bog7bg.onrender.com/api",
     "VITE_NODE_ENV": "production"
   }
 }
