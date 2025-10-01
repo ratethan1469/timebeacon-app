@@ -36,7 +36,7 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
     setError('');
 
     try {
-      const response = await fetch('/api/auth/forgot-password', {
+      const response = await fetch('https://api.timebeacon-auth.workers.dev/api/auth/forgot-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
