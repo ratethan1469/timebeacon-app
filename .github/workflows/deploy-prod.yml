@@ -35,6 +35,8 @@ jobs:
         VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         VITE_GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         VITE_GOOGLE_REDIRECT_URI: https://app.timebeacon.io/api/auth/google/callback
+        MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
 
     - name: Deploy to Production (Vercel)
       uses: amondnet/vercel-action@v25
