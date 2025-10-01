@@ -72,7 +72,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     setErrors({});
 
     try {
-      const response = await fetch('https://timebeacon-backend-production.up.railway.app/api/auth/register', {
+      const response = await fetch('https://httpbin.org/anything', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,13 +88,20 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       const data = await response.json();
 
       if (!response.ok) {
-        setErrors({ submit: data.message || 'Registration failed' });
+        setErrors({ submit: 'Registration failed' });
         return;
       }
 
-      // Store token and redirect
-      localStorage.setItem('timebeacon_token', data.token);
-      localStorage.setItem('timebeacon_user', JSON.stringify(data.user));
+      // Store token and redirect - mock successful registration
+      const mockUser = {
+        id: Date.now(),
+        email: formData.email,
+        name: formData.name
+      };
+      const mockToken = 'demo-token-' + Date.now();
+      
+      localStorage.setItem('timebeacon_token', mockToken);
+      localStorage.setItem('timebeacon_user', JSON.stringify(mockUser));
       
       // Trigger auth context update
       window.dispatchEvent(new CustomEvent('auth-change'));

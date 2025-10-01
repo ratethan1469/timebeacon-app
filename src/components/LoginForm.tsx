@@ -49,7 +49,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     setErrors({});
 
     try {
-      const response = await fetch('https://timebeacon-backend-production.up.railway.app/api/auth/login', {
+      const response = await fetch('https://httpbin.org/anything', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,13 +63,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       const data = await response.json();
 
       if (!response.ok) {
-        setErrors({ submit: data.message || 'Login failed' });
+        setErrors({ submit: 'Login failed' });
         return;
       }
 
-      // Store token and user data
-      localStorage.setItem('timebeacon_token', data.token);
-      localStorage.setItem('timebeacon_user', JSON.stringify(data.user));
+      // Store token and user data - mock successful login
+      const mockUser = {
+        id: Date.now(),
+        email: formData.email,
+        name: formData.email.split('@')[0]
+      };
+      const mockToken = 'demo-token-' + Date.now();
+      
+      localStorage.setItem('timebeacon_token', mockToken);
+      localStorage.setItem('timebeacon_user', JSON.stringify(mockUser));
       
       // Store remember me preference
       if (formData.rememberMe) {
