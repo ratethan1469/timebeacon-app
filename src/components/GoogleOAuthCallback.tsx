@@ -116,10 +116,10 @@ export const GoogleOAuthCallback: React.FC = () => {
           }, window.location.origin);
         }
         
-        // Auto-close after 2 seconds
-        setTimeout(() => {
-          window.close();
-        }, 2000);
+        // Keep popup open for debugging - comment out auto-close
+        // setTimeout(() => {
+        //   window.close();
+        // }, 2000);
         
       } catch (error) {
         console.error('❌ OAuth callback error:', error);
@@ -144,10 +144,10 @@ export const GoogleOAuthCallback: React.FC = () => {
           }, window.location.origin);
         }
         
-        // Auto-close after 5 seconds on error
-        setTimeout(() => {
-          window.close();
-        }, 5000);
+        // Keep popup open for debugging - comment out auto-close
+        // setTimeout(() => {
+        //   window.close();
+        // }, 5000);
       }
     };
 
