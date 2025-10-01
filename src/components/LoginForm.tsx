@@ -49,31 +49,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     setErrors({});
 
     try {
-      const response = await fetch('https://httpbin.org/anything', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email.trim().toLowerCase(),
-          password: formData.password
-        }),
-      });
+      // Simulate successful login without any API calls
+      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setErrors({ submit: 'Login failed' });
-        return;
-      }
-
-      // Store token and user data - mock successful login
+      // Create successful login locally
       const mockUser = {
         id: Date.now(),
-        email: formData.email,
+        email: formData.email.trim().toLowerCase(),
         name: formData.email.split('@')[0]
       };
-      const mockToken = 'demo-token-' + Date.now();
+      const mockToken = 'timebeacon-token-' + Date.now();
       
       localStorage.setItem('timebeacon_token', mockToken);
       localStorage.setItem('timebeacon_user', JSON.stringify(mockUser));
@@ -89,7 +74,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       // Success - user will be redirected by auth context
 
     } catch (error) {
-      setErrors({ submit: 'Network error. Please try again.' });
+      setErrors({ submit: 'Login failed. Please try again.' });
     } finally {
       setIsLoading(false);
     }

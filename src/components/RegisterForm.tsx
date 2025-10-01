@@ -72,33 +72,16 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     setErrors({});
 
     try {
-      const response = await fetch('https://httpbin.org/anything', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          email: formData.email.trim().toLowerCase(),
-          password: formData.password,
-          company: formData.company.trim()
-        }),
-      });
+      // Simulate successful registration without any API calls
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setErrors({ submit: 'Registration failed' });
-        return;
-      }
-
-      // Store token and redirect - mock successful registration
+      // Create user account locally
       const mockUser = {
         id: Date.now(),
-        email: formData.email,
-        name: formData.name
+        email: formData.email.trim().toLowerCase(),
+        name: formData.name.trim()
       };
-      const mockToken = 'demo-token-' + Date.now();
+      const mockToken = 'timebeacon-token-' + Date.now();
       
       localStorage.setItem('timebeacon_token', mockToken);
       localStorage.setItem('timebeacon_user', JSON.stringify(mockUser));
@@ -109,7 +92,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       // Success - user will be redirected by auth context
 
     } catch (error) {
-      setErrors({ submit: 'Network error. Please try again.' });
+      setErrors({ submit: 'Registration failed. Please try again.' });
     } finally {
       setIsLoading(false);
     }
