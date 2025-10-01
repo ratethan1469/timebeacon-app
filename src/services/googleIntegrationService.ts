@@ -266,37 +266,44 @@ export class GoogleIntegrationService {
    * @returns Promise with authorization URL, state parameter, and code verifier
    */
   public async generateAuthUrl(): Promise<{ url: string; state: string; codeVerifier: string }> {
-    console.log('🔐 Generating OAuth authorization URL via backend...');
+    console.log('🔐 Generating OAuth authorization URL client-side...');
     
     try {
-      const response = await fetch('http://localhost:3003/auth/google/url', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      // Generate PKCE parameters
+      const codeVerifier = this.base64URLEncode(crypto.getRandomValues(new Uint8Array(32)));
+      const encoder = new TextEncoder();
+      const data = encoder.encode(codeVerifier);
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      const codeChallenge = this.base64URLEncode(new Uint8Array(hash));
+      
+      // Generate state parameter
+      const state = this.base64URLEncode(crypto.getRandomValues(new Uint8Array(16)));
+      
+      // Build OAuth URL
+      const params = new URLSearchParams({
+        client_id: this.config.clientId,
+        redirect_uri: this.config.redirectUri,
+        response_type: 'code',
+        scope: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly',
+        state: state,
+        code_challenge: codeChallenge,
+        code_challenge_method: 'S256',
+        access_type: 'offline',
+        prompt: 'consent'
       });
 
-      if (!response.ok) {
-        throw new Error(`Backend auth URL generation failed: ${response.status}`);
-      }
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 
-      const data = await response.json();
-      
-      if (!data.success || !data.authUrl || !data.state) {
-        throw new Error('Invalid response from backend');
-      }
-
-      console.log('✅ Authorization URL generated via backend');
-      console.log('🔍 DEBUG - Using backend redirect URI');
-      logApiCall('OAuth', 'generateAuthUrl', true, { state: data.state, backend: true });
+      console.log('✅ Authorization URL generated client-side');
+      logApiCall('OAuth', 'generateAuthUrl', true, { state, clientSide: true });
       
       return { 
-        url: data.authUrl, 
-        state: data.state, 
-        codeVerifier: 'backend-handled' // Backend handles PKCE
+        url: authUrl, 
+        state: state, 
+        codeVerifier: codeVerifier
       };
     } catch (error) {
-      console.error('❌ Backend auth URL generation failed:', error);
+      console.error('❌ Client-side auth URL generation failed:', error);
       throw error;
     }
   }
@@ -322,12 +329,12 @@ export class GoogleIntegrationService {
    * @returns Token response
    */
   public async exchangeCodeForTokens(
-    _code: string, 
+    code: string, 
     state: string, 
     expectedState: string,
-    _codeVerifier: string
+    codeVerifier: string
   ): Promise<TokenResponse> {
-    console.log('🔄 Using backend callback - no token exchange needed...');
+    console.log('🔄 Exchanging authorization code for tokens...');
     
     // Validate state parameter to prevent CSRF attacks
     if (state !== expectedState) {
@@ -336,30 +343,49 @@ export class GoogleIntegrationService {
       throw new Error(error);
     }
 
-    console.log('✅ Backend handles token exchange automatically via callback');
-    
-    // Since the backend handles the OAuth callback and token exchange,
-    // we need to simulate a successful response for the frontend
-    // The actual tokens are handled by the backend
-    const simulatedResponse: TokenResponse = {
-      access_token: 'backend-managed',
-      refresh_token: 'backend-managed', 
-      expires_in: 3600,
-      token_type: 'Bearer',
-      scope: 'backend-managed'
-    };
+    try {
+      const response = await fetch('/api/auth/google-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code,
+          codeVerifier,
+          redirectUri: this.config.redirectUri
+        }),
+      });
 
-    logApiCall('OAuth', 'exchangeCodeForTokens', true, { 
-      backend: true, 
-      note: 'Tokens managed by backend'
-    });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Token exchange failed');
+      }
 
-    // Store simulated tokens (backend manages the real ones)
-    this.accessToken = simulatedResponse.access_token;
-    this.refreshToken = simulatedResponse.refresh_token;
-    this.tokenExpiry = new Date(Date.now() + (simulatedResponse.expires_in * 1000));
+      const tokens = await response.json();
 
-    return simulatedResponse;
+      console.log('✅ Token exchange successful');
+      logApiCall('OAuth', 'exchangeCodeForTokens', true, { 
+        scope: tokens.scope,
+        expiresIn: tokens.expires_in
+      });
+
+      // Store tokens
+      this.accessToken = tokens.access_token;
+      this.refreshToken = tokens.refresh_token;
+      this.tokenExpiry = new Date(Date.now() + (tokens.expires_in * 1000));
+
+      return {
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        expires_in: tokens.expires_in,
+        token_type: tokens.token_type,
+        scope: tokens.scope
+      };
+    } catch (error) {
+      console.error('❌ Token exchange failed:', error);
+      logApiCall('OAuth', 'exchangeCodeForTokens', false, { error: error.message });
+      throw error;
+    }
   }
 
   /**
