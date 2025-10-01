@@ -1,8 +1,8 @@
 import React from 'react';
-import { ClerkAuth } from './ClerkAuth';
+import { GoogleLogin } from './GoogleLogin';
 
 const Login: React.FC = () => {
-  return <ClerkAuth />;
+  return <GoogleLogin />;
 };
 
 export default Login;
