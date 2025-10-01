@@ -55,7 +55,8 @@
       "Bash(npm test)",
       "Bash(npm run:*)",
       "Bash(open /Users/miriamritter/Desktop/timebeacon-app/test-oauth-flow.html)",
-      "Bash(open http://localhost:8080/simple-test.html)"
+      "Bash(open http://localhost:8080/simple-test.html)",
+      "Bash(git rm:*)"
     ],
     "deny": []
   }

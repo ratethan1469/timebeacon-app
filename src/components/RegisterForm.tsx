@@ -1,22 +1,23 @@
 import React, { useState } from 'react';
 
-interface LoginFormProps {
-  onSwitchToRegister: () => void;
-  onSwitchToForgotPassword: () => void;
+interface RegisterFormProps {
+  onSwitchToLogin: () => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({
-  onSwitchToRegister,
-  onSwitchToForgotPassword,
+export const RegisterForm: React.FC<RegisterFormProps> = ({
+  onSwitchToLogin,
   isLoading,
   setIsLoading
 }) => {
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
     password: '',
-    rememberMe: false
+    confirmPassword: '',
+    company: '',
+    agreeToTerms: false
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
@@ -24,16 +25,38 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+    // Name validation
+    if (!formData.name.trim()) {
+      newErrors.name = 'Full name is required';
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = 'Name must be at least 2 characters';
+    }
+
     // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email) {
       newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (!emailRegex.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
 
     // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'Password must contain uppercase, lowercase, and number';
+    }
+
+    // Confirm password validation
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    // Terms validation
+    if (!formData.agreeToTerms) {
+      newErrors.agreeToTerms = 'You must agree to the terms of service';
     }
 
     setErrors(newErrors);
@@ -49,32 +72,29 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     setErrors({});
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          name: formData.name.trim(),
           email: formData.email.trim().toLowerCase(),
-          password: formData.password
+          password: formData.password,
+          company: formData.company.trim()
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setErrors({ submit: data.message || 'Login failed' });
+        setErrors({ submit: data.message || 'Registration failed' });
         return;
       }
 
-      // Store token and user data
+      // Store token and redirect
       localStorage.setItem('timebeacon_token', data.token);
       localStorage.setItem('timebeacon_user', JSON.stringify(data.user));
-      
-      // Store remember me preference
-      if (formData.rememberMe) {
-        localStorage.setItem('timebeacon_remember', 'true');
-      }
       
       // Trigger auth context update
       window.dispatchEvent(new CustomEvent('auth-change'));
@@ -97,16 +117,32 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   return (
-    <div className="login-form">
+    <div className="register-form">
       <div className="form-header">
-        <h2>Welcome Back</h2>
-        <p>Sign in to your TimeBeacon account</p>
+        <h2>Create Account</h2>
+        <p>Start tracking your time professionally</p>
       </div>
 
       <form onSubmit={handleSubmit} noValidate>
+        {/* Name Field */}
+        <div className="form-group">
+          <label htmlFor="name">Full Name *</label>
+          <input
+            id="name"
+            type="text"
+            value={formData.name}
+            onChange={(e) => handleInputChange('name', e.target.value)}
+            className={errors.name ? 'error' : ''}
+            placeholder="Enter your full name"
+            disabled={isLoading}
+            autoComplete="name"
+          />
+          {errors.name && <span className="error-message">{errors.name}</span>}
+        </div>
+
         {/* Email Field */}
         <div className="form-group">
-          <label htmlFor="email">Email Address</label>
+          <label htmlFor="email">Email Address *</label>
           <input
             id="email"
             type="email"
@@ -116,14 +152,27 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             placeholder="Enter your email"
             disabled={isLoading}
             autoComplete="email"
-            autoFocus
           />
           {errors.email && <span className="error-message">{errors.email}</span>}
         </div>
 
+        {/* Company Field */}
+        <div className="form-group">
+          <label htmlFor="company">Company (Optional)</label>
+          <input
+            id="company"
+            type="text"
+            value={formData.company}
+            onChange={(e) => handleInputChange('company', e.target.value)}
+            placeholder="Your company name"
+            disabled={isLoading}
+            autoComplete="organization"
+          />
+        </div>
+
         {/* Password Field */}
         <div className="form-group">
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">Password *</label>
           <div className="password-input">
             <input
               id="password"
@@ -131,9 +180,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               value={formData.password}
               onChange={(e) => handleInputChange('password', e.target.value)}
               className={errors.password ? 'error' : ''}
-              placeholder="Enter your password"
+              placeholder="Create a strong password"
               disabled={isLoading}
-              autoComplete="current-password"
+              autoComplete="new-password"
             />
             <button
               type="button"
@@ -145,29 +194,40 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </button>
           </div>
           {errors.password && <span className="error-message">{errors.password}</span>}
+          <div className="password-requirements">
+            <small>Password must contain: uppercase, lowercase, number, 8+ characters</small>
+          </div>
         </div>
 
-        {/* Remember Me and Forgot Password */}
-        <div className="form-options">
+        {/* Confirm Password Field */}
+        <div className="form-group">
+          <label htmlFor="confirmPassword">Confirm Password *</label>
+          <input
+            id="confirmPassword"
+            type="password"
+            value={formData.confirmPassword}
+            onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+            className={errors.confirmPassword ? 'error' : ''}
+            placeholder="Confirm your password"
+            disabled={isLoading}
+            autoComplete="new-password"
+          />
+          {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
+        </div>
+
+        {/* Terms Checkbox */}
+        <div className="form-group checkbox-group">
           <label className="checkbox-label">
             <input
               type="checkbox"
-              checked={formData.rememberMe}
-              onChange={(e) => handleInputChange('rememberMe', e.target.checked)}
+              checked={formData.agreeToTerms}
+              onChange={(e) => handleInputChange('agreeToTerms', e.target.checked)}
               disabled={isLoading}
             />
             <span className="checkmark"></span>
-            Remember me
+            I agree to the <a href="/terms" target="_blank">Terms of Service</a> and <a href="/privacy" target="_blank">Privacy Policy</a> *
           </label>
-          
-          <button
-            type="button"
-            className="link-btn"
-            onClick={onSwitchToForgotPassword}
-            disabled={isLoading}
-          >
-            Forgot Password?
-          </button>
+          {errors.agreeToTerms && <span className="error-message">{errors.agreeToTerms}</span>}
         </div>
 
         {/* Submit Error */}
@@ -186,31 +246,31 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           {isLoading ? (
             <>
               <span className="spinner"></span>
-              Signing In...
+              Creating Account...
             </>
           ) : (
-            'Sign In'
+            'Create Account'
           )}
         </button>
 
-        {/* Switch to Register */}
+        {/* Switch to Login */}
         <div className="form-footer">
           <p>
-            Don't have an account?{' '}
+            Already have an account?{' '}
             <button
               type="button"
               className="link-btn"
-              onClick={onSwitchToRegister}
+              onClick={onSwitchToLogin}
               disabled={isLoading}
             >
-              Create Account
+              Sign In
             </button>
           </p>
         </div>
       </form>
 
       <style>{`
-        .login-form {
+        .register-form {
           width: 100%;
         }
 
@@ -284,24 +344,40 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           padding: 0;
         }
 
-        .form-options {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+        .password-requirements {
+          margin-top: 4px;
+        }
+
+        .password-requirements small {
+          color: #718096;
+          font-size: 12px;
+        }
+
+        .checkbox-group {
           margin: 20px 0;
         }
 
         .checkbox-label {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           cursor: pointer;
           font-size: 14px;
-          color: #374151;
+          line-height: 1.4;
         }
 
         .checkbox-label input[type="checkbox"] {
           margin-right: 8px;
+          margin-top: 2px;
           width: auto;
+        }
+
+        .checkbox-label a {
+          color: #667eea;
+          text-decoration: none;
+        }
+
+        .checkbox-label a:hover {
+          text-decoration: underline;
         }
 
         .error-message {
