@@ -1,8 +1,8 @@
 import React from 'react';
-import { AuthFlow } from './AuthFlow';
+import { ClerkAuth } from './ClerkAuth';
 
 const Login: React.FC = () => {
-  return <AuthFlow />;
+  return <ClerkAuth />;
 };
 
 export default Login;
