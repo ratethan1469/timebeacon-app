@@ -28,7 +28,9 @@ export default async function handler(req, res) {
       hasClientId: !!clientId,
       hasClientSecret: !!clientSecret,
       clientIdLength: clientId?.length,
-      clientSecretLength: clientSecret?.length
+      clientSecretLength: clientSecret?.length,
+      clientIdPreview: clientId?.substring(0, 20) + '...',
+      clientSecretPreview: clientSecret?.substring(0, 12) + '...'
     });
 
     if (!clientId || !clientSecret) {
