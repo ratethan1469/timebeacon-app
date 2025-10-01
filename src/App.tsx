@@ -10,8 +10,8 @@ import GoogleOAuthCallback from './components/GoogleOAuthCallback';
 function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <Router>
+      <Router>
+        <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<CompanySignup />} />
@@ -94,8 +94,8 @@ function App() {
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>
-        </Router>
-      </AuthProvider>
+        </AuthProvider>
+      </Router>
     </ThemeProvider>
   );
 }
