@@ -177,7 +177,7 @@ export class GoogleIntegrationService {
       const config: GoogleConfig = {
         clientId: import.meta.env?.VITE_GOOGLE_CLIENT_ID || '696202687856-c82e7prqdt00og14k6lp47hiutn7p9an.apps.googleusercontent.com',
         clientSecret: import.meta.env?.VITE_GOOGLE_CLIENT_SECRET || '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',
-        redirectUri: import.meta.env?.VITE_GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/auth/google/callback',
+        redirectUri: import.meta.env?.VITE_GOOGLE_REDIRECT_URI || 'https://app.timebeacon.io/auth/google/callback',
         apiKey: import.meta.env?.VITE_GOOGLE_API_KEY as string
       };
 

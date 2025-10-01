@@ -129,26 +129,31 @@ export const IntegrationsRevamped: React.FC = () => {
       sessionStorage.setItem('google_oauth_code_verifier', codeVerifier);
       sessionStorage.setItem('connecting_service', integrationId);
       
-      // Open OAuth popup
+      // Open OAuth popup with noopener=false to avoid COOP issues
       const popup = window.open(
         url,
         'google-oauth',
-        'width=500,height=600,scrollbars=yes,resizable=yes'
+        'width=500,height=600,scrollbars=yes,resizable=yes,noopener=no,noreferrer=no'
       );
 
       if (!popup) {
         throw new Error('Popup blocked. Please allow popups for this site.');
       }
 
-      // Listen for OAuth callback
+      // Listen for OAuth callback with error handling for COOP
       const checkClosed = setInterval(() => {
-        if (popup.closed) {
-          clearInterval(checkClosed);
-          setIsConnecting(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(integrationId);
-            return newSet;
-          });
+        try {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            setIsConnecting(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(integrationId);
+              return newSet;
+            });
+          }
+        } catch (error) {
+          // COOP policy may prevent access to popup.closed
+          console.log('⚠️ Cannot check popup status due to COOP policy');
         }
       }, 1000);
 
@@ -158,15 +163,29 @@ export const IntegrationsRevamped: React.FC = () => {
 
         if (event.data.type === 'OAUTH_SUCCESS') {
           clearInterval(checkClosed);
-          popup.close();
+          try {
+            popup.close();
+          } catch (error) {
+            console.log('⚠️ Cannot close popup due to COOP policy');
+          }
           
           console.log('🎉 OAuth Success! Received tokens and user info:', event.data);
           
           // Store the encrypted tokens and user info
-          if (event.data.tokens && event.data.userInfo) {
-            localStorage.setItem('google_oauth_tokens', JSON.stringify(event.data.tokens));
-            localStorage.setItem('google_user_info', JSON.stringify(event.data.userInfo));
-            console.log('✅ Stored encrypted tokens and user info');
+          const { data } = event.data;
+          if (data?.tokenResponse) {
+            localStorage.setItem('google_oauth_tokens', JSON.stringify(data.tokenResponse));
+            console.log('✅ Stored OAuth tokens');
+            
+            // Mock user info since we don't get it from the callback yet
+            const mockUserInfo = {
+              email: 'user@example.com',
+              name: 'Google User',
+              id: 'google_user',
+              picture: ''
+            };
+            localStorage.setItem('google_user_info', JSON.stringify(mockUserInfo));
+            console.log('✅ Stored user info');
           }
           
           // Mark as connected and run tests
@@ -187,7 +206,11 @@ export const IntegrationsRevamped: React.FC = () => {
           window.removeEventListener('message', messageListener);
         } else if (event.data.type === 'OAUTH_ERROR') {
           clearInterval(checkClosed);
-          popup.close();
+          try {
+            popup.close();
+          } catch (error) {
+            console.log('⚠️ Cannot close popup due to COOP policy');
+          }
           console.error('OAuth error:', event.data.error);
           alert(`Connection failed: ${event.data.error}`);
           window.removeEventListener('message', messageListener);
