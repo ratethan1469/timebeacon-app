@@ -20,6 +20,24 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'Missing required parameters' });
     }
 
+    // Check environment variables
+    const clientId = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+    console.log('Environment check:', {
+      hasClientId: !!clientId,
+      hasClientSecret: !!clientSecret,
+      clientIdLength: clientId?.length,
+      clientSecretLength: clientSecret?.length
+    });
+
+    if (!clientId || !clientSecret) {
+      return res.status(500).json({ 
+        message: 'Server configuration error',
+        error: 'Missing OAuth credentials'
+      });
+    }
+
     // Exchange code for tokens with Google
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -27,8 +45,8 @@ export default async function handler(req, res) {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        client_id: process.env.VITE_GOOGLE_CLIENT_ID,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        client_id: clientId,
+        client_secret: clientSecret,
         code: code,
         grant_type: 'authorization_code',
         redirect_uri: redirectUri,
