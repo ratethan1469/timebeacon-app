@@ -121,7 +121,7 @@ export class MultiTenantDatabase extends TimeBeaconDatabase {
 
         // Enhanced sync metadata
         if (!db.objectStoreNames.contains('syncMetadata')) {
-          const syncStore = db.createObjectStore('syncMetadata', { keyPath: ['companyId', 'userId'] });
+          db.createObjectStore('syncMetadata', { keyPath: ['companyId', 'userId'] });
         }
 
         console.log('📦 Multi-tenant database schema created');
@@ -221,7 +221,7 @@ export class MultiTenantDatabase extends TimeBeaconDatabase {
 
     return await this.performOperation<TimeEntry[]>(
       'timeEntries',
-      (store) => store.index('companyUser').getAll([this.currentCompanyId, targetUserId])
+      (store) => store.index('companyUser').getAll([this.currentCompanyId!, targetUserId])
     );
   }
 
@@ -234,7 +234,7 @@ export class MultiTenantDatabase extends TimeBeaconDatabase {
     for (const userId of userIds) {
       const entries = await this.performOperation<TimeEntry[]>(
         'timeEntries',
-        (store) => store.index('companyUser').getAll([this.currentCompanyId, userId])
+        (store) => store.index('companyUser').getAll([this.currentCompanyId!, userId])
       );
       allEntries.push(...entries);
     }
@@ -278,7 +278,7 @@ export class MultiTenantDatabase extends TimeBeaconDatabase {
 
   // ===== CONTEXT-AWARE CLIENTS =====
 
-  async addClient(client: Client): Promise<void> {
+  async addClient(client: Omit<Client, 'companyId' | 'createdBy' | 'createdAt' | 'updatedAt'>): Promise<void> {
     if (!this.currentCompanyId || !this.currentUserId) {
       throw new Error('Database context not set');
     }
@@ -287,7 +287,7 @@ export class MultiTenantDatabase extends TimeBeaconDatabase {
       ...client,
       companyId: this.currentCompanyId,
       createdBy: this.currentUserId,
-      createdAt: client.createdAt || new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 

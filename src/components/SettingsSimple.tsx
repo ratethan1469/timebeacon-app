@@ -1,22 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsType, Project } from '../types';
+import { Settings as SettingsType } from '../types';
 
 interface SettingsProps {
   settings: SettingsType;
-  projects: Project[];
   onUpdateSettings: (settings: SettingsType) => void;
-  onAddProject: (project: Omit<Project, 'id' | 'createdAt'>) => Project;
-  onUpdateProject: (id: string, updates: Partial<Project>) => void;
-  onDeleteProject: (id: string) => void;
 }
 
 export const SettingsSimple: React.FC<SettingsProps> = ({
   settings,
-  projects,
   onUpdateSettings,
-  onAddProject,
-  onUpdateProject,
-  onDeleteProject,
 }) => {
   // Direct state for form values
   const [formData, setFormData] = useState({

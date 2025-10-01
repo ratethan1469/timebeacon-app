@@ -1,7 +1,11 @@
 /**
  * Intelligent Data Import Service
- * Fetches data from Gmail and Calendar APIs, processes with AI, and creates time entries
+ * Phase 1: Smart estimation with user confirmation
+ * Phase 2: Browser extension integration ready
+ * Fetches data from Gmail and Calendar APIs, processes intelligently, and creates time entries
  */
+
+import { emailTimeTracker } from './emailTimeTracking';
 
 export interface ImportResult {
   success: boolean;
@@ -76,7 +80,7 @@ export class IntelligentDataImportService {
           }
         } catch (error) {
           console.error(`Error processing email ${email.id}:`, error);
-          errors.push(`Email ${email.subject}: ${error.message}`);
+          errors.push(`Email ${email.subject}: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
       
@@ -94,7 +98,7 @@ export class IntelligentDataImportService {
       return {
         success: false,
         importedCount: 0,
-        errors: [error.message],
+        errors: [error instanceof Error ? error.message : String(error)],
         timeEntries: []
       };
     }
@@ -148,7 +152,7 @@ export class IntelligentDataImportService {
           }
         } catch (error) {
           console.error(`Error processing meeting ${meeting.id}:`, error);
-          errors.push(`Meeting ${meeting.summary}: ${error.message}`);
+          errors.push(`Meeting ${meeting.summary}: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
       
@@ -166,7 +170,7 @@ export class IntelligentDataImportService {
       return {
         success: false,
         importedCount: 0,
-        errors: [error.message],
+        errors: [error instanceof Error ? error.message : String(error)],
         timeEntries: []
       };
     }
@@ -174,24 +178,31 @@ export class IntelligentDataImportService {
   
   private async processEmailToTimeEntry(email: EmailData): Promise<any | null> {
     try {
-      // Estimate time spent on email
-      const estimatedMinutes = this.estimateEmailTime(email);
+      // Use the new email time tracking service for intelligent processing
+      const emailTimeData = emailTimeTracker.processEmailTime({
+        id: email.id,
+        subject: email.subject,
+        sender: email.sender,
+        recipients: email.recipients,
+        timestamp: new Date(email.timestamp),
+        wordCount: email.wordCount,
+        threadLength: email.threadLength,
+        hasAttachments: email.snippet?.includes('attachment') || false
+      });
       
-      // Determine project/client from email domain or content
-      const { client, project } = this.matchEmailToProject(email);
-      
-      // Create time entry
+      // Convert to time entry format
       const timeEntry = {
-        date: email.timestamp.split('T')[0],
-        startTime: new Date(email.timestamp).toTimeString().slice(0, 5),
-        duration: estimatedMinutes / 60, // Convert to hours
-        client,
-        project,
-        description: `Email: ${email.subject}`,
+        date: emailTimeData.timestamp.toISOString().split('T')[0],
+        startTime: emailTimeData.timestamp.toTimeString().slice(0, 5),
+        duration: emailTimeData.finalMinutes / 60, // Convert to hours
+        client: this.inferClient(email.sender),
+        project: this.inferProject(email.subject, email.sender),
+        description: `Email: ${email.subject} (${emailTimeData.finalMinutes}min, ${Math.round(emailTimeData.confidence * 100)}% confidence)`,
         category: this.determineEmailCategory(email),
-        source: 'gmail' as const,
+        source: emailTimeData.source === 'extension' ? 'gmail-tracked' as const : 'gmail' as const,
         isAutomatic: true,
-        tags: ['email', 'imported', 'ai-processed']
+        needsReview: emailTimeData.needsReview,
+        tags: ['email', 'imported', emailTimeData.source, `confidence-${Math.round(emailTimeData.confidence * 100)}`]
       };
       
       return timeEntry;
@@ -233,33 +244,9 @@ export class IntelligentDataImportService {
     }
   }
   
-  private estimateEmailTime(email: EmailData): number {
-    // Simple AI-like estimation based on word count and thread length
-    const baseReadTime = Math.max(2, email.wordCount / 250); // ~250 words per minute reading
-    const composeTime = email.threadLength > 1 ? baseReadTime * 0.5 : 0; // Estimate compose time for replies
-    const complexityMultiplier = email.wordCount > 200 ? 1.5 : 1; // Complex emails take longer
-    
-    return Math.round((baseReadTime + composeTime) * complexityMultiplier);
-  }
+  // Email time estimation moved to emailTimeTracking service
   
-  private matchEmailToProject(email: EmailData): { client: string; project: string } {
-    // Extract domain from sender
-    const domain = email.sender.split('@')[1]?.toLowerCase();
-    
-    // Simple domain-based matching (in production, this would use AI/LLM)
-    if (domain?.includes('acme') || domain?.includes('acmecorp')) {
-      return { client: 'Acme Corp', project: 'Salesforce Integration' };
-    } else if (domain?.includes('techstart') || domain?.includes('startup')) {
-      return { client: 'TechStart Inc', project: 'Monday.com Implementation' };
-    } else if (domain?.includes('zendesk')) {
-      return { client: 'Zendesk Inc', project: 'Zendesk Integration' };
-    } else if (domain?.includes('timebeacon.io')) {
-      return { client: 'Internal', project: 'Internal Operations' };
-    }
-    
-    // Default fallback
-    return { client: 'External Client', project: 'Client Communication' };
-  }
+  // Email project matching moved to emailTimeTracking service
   
   private matchMeetingToProject(meeting: CalendarEventData): { client: string; project: string } {
     const title = meeting.summary?.toLowerCase() || '';
@@ -338,6 +325,27 @@ export class IntelligentDataImportService {
       startDate: monday.toISOString(),
       endDate: friday.toISOString()
     };
+  }
+
+  private inferClient(senderEmail: string): string {
+    const domain = senderEmail.split('@')[1]?.toLowerCase();
+    
+    if (domain?.includes('acme')) return 'Acme Corp';
+    if (domain?.includes('techstart')) return 'TechStart Inc';
+    if (domain?.includes('zendesk')) return 'Zendesk Inc';
+    if (domain?.includes('timebeacon.io')) return 'Internal';
+    
+    return 'Email Client';
+  }
+
+  private inferProject(subject: string, senderEmail: string): string {
+    const content = subject.toLowerCase();
+    
+    if (content.includes('salesforce')) return 'Salesforce Integration';
+    if (content.includes('monday')) return 'Monday.com Implementation';
+    if (content.includes('zendesk')) return 'Zendesk Integration';
+    
+    return 'Email Communication';
   }
 }
 

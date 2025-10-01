@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Settings as SettingsType, Project } from '../types';
-import { MultiSelect } from './MultiSelect';
-import { projectTemplates, ProjectTemplate } from '../data/projectTemplates';
 import PermissionsManager from './PermissionsManager';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -25,7 +23,6 @@ export const Settings: React.FC<SettingsProps> = ({
   const { checkPermission } = useAuth();
   const [activeTab, setActiveTab] = useState<'general' | 'permissions'>('general');
   const [showProjectForm, setShowProjectForm] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [projectForm, setProjectForm] = useState({
     name: '',
@@ -73,8 +70,6 @@ export const Settings: React.FC<SettingsProps> = ({
     email: ''
   };
 
-  // Ensure defaultProjects is an array
-  const safeDefaultProjects = Array.isArray(settings.defaultProjects) ? settings.defaultProjects : [];
 
   const handleProjectSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,23 +120,6 @@ export const Settings: React.FC<SettingsProps> = ({
     setShowProjectForm(true);
   };
 
-  const handleUseTemplate = (template: ProjectTemplate) => {
-    setProjectForm({
-      name: template.name,
-      client: template.client,
-      description: template.description,
-      rate: template.estimatedRate,
-      color: template.color,
-      active: true,
-      billable: true,
-      clientId: '',
-      category: template.category,
-      status: 'planning',
-      startDate: new Date().toISOString().split('T')[0]
-    });
-    setShowTemplates(false);
-    setShowProjectForm(true);
-  };
 
   const exportToCSV = () => {
     try {

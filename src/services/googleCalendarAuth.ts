@@ -30,7 +30,7 @@ class GoogleCalendarAuthService {
     this.config = {
       clientId: (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || '',
       clientSecret: (import.meta as any).env?.VITE_GOOGLE_CLIENT_SECRET || '',
-      redirectUri: `${window.location.origin}/auth/google/callback`,
+      redirectUri: `${typeof window !== 'undefined' ? window.location?.origin : 'http://localhost:3000'}/auth/google/callback`,
       scopes: [
         'https://www.googleapis.com/auth/calendar.readonly',
         'https://www.googleapis.com/auth/userinfo.email'
@@ -211,7 +211,9 @@ class GoogleCalendarAuthService {
    */
   private storeTokens(tokens: AuthTokens): void {
     try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(tokens));
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(tokens));
+      }
     } catch (error) {
       console.error('Failed to store auth tokens:', error);
     }
@@ -223,8 +225,11 @@ class GoogleCalendarAuthService {
    */
   private getStoredTokens(): AuthTokens | null {
     try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
-      return stored ? JSON.parse(stored) : null;
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const stored = localStorage.getItem(this.STORAGE_KEY);
+        return stored ? JSON.parse(stored) : null;
+      }
+      return null;
     } catch (error) {
       console.error('Failed to load stored tokens:', error);
       return null;
@@ -236,7 +241,9 @@ class GoogleCalendarAuthService {
    */
   private clearStoredTokens(): void {
     try {
-      localStorage.removeItem(this.STORAGE_KEY);
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.removeItem(this.STORAGE_KEY);
+      }
     } catch (error) {
       console.error('Failed to clear stored tokens:', error);
     }

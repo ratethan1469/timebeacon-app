@@ -52,9 +52,9 @@ const Login: React.FC = () => {
 
   const fillDemoCredentials = (role: 'admin' | 'manager' | 'employee') => {
     const credentials = {
-      admin: { email: 'admin@demo.com', password: 'Admin123!' },
-      manager: { email: 'manager@demo.com', password: 'Manager123!' },
-      employee: { email: 'employee@demo.com', password: 'Employee123!' },
+      admin: { email: 'sarah.manager@acmecrm.com', password: 'TempPass123!' },
+      manager: { email: 'sarah.manager@acmecrm.com', password: 'TempPass123!' },
+      employee: { email: 'mike.developer@acmecrm.com', password: 'TempPass123!' },
     };
     
     setEmail(credentials[role].email);

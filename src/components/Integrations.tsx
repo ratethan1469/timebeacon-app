@@ -169,7 +169,7 @@ const availableIntegrations: IntegrationConfig[] = [
   }
 ];
 
-export const Integrations: React.FC<IntegrationsProps> = ({ integrations, onToggleIntegration }) => {
+export const Integrations: React.FC<IntegrationsProps> = ({ integrations: _integrations, onToggleIntegration: _onToggleIntegration }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showSetupModal, setShowSetupModal] = useState<string | null>(null);
 

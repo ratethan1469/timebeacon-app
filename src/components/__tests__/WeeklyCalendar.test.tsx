@@ -61,14 +61,16 @@ const mockClients: Client[] = [
     name: 'Test Client',
     color: '#3b82f6',
     active: true,
-    createdAt: '2025-01-15'
+    createdAt: '2025-01-15',
+    updatedAt: '2025-01-15'
   },
   {
     id: '2',
     name: 'Another Client',
     color: '#10b981',
     active: true,
-    createdAt: '2025-01-15'
+    createdAt: '2025-01-15',
+    updatedAt: '2025-01-15'
   }
 ];
 

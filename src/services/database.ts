@@ -32,6 +32,12 @@ export class TimeBeaconDatabase {
    * Initialize the IndexedDB database
    */
   async init(): Promise<void> {
+    // Check if we're in a test environment or if indexedDB is not available
+    if (typeof indexedDB === 'undefined') {
+      console.warn('IndexedDB not available (likely in test environment)');
+      return Promise.resolve();
+    }
+
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.dbName, this.version);
 
@@ -95,6 +101,15 @@ export class TimeBeaconDatabase {
       await this.init();
     }
 
+    // If still no db (e.g., in test environment), return appropriate defaults
+    if (!this.db) {
+      if (mode === 'readwrite') {
+        return Promise.resolve() as any;
+      } else {
+        return Promise.resolve(null) as any;
+      }
+    }
+
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction([storeName], mode);
       const store = transaction.objectStore(storeName);
@@ -147,10 +162,11 @@ export class TimeBeaconDatabase {
   }
 
   async getAllTimeEntries(): Promise<TimeEntry[]> {
-    return await this.performOperation<TimeEntry[]>(
+    const result = await this.performOperation<TimeEntry[]>(
       'timeEntries',
       (store) => store.getAll()
     );
+    return result || [];
   }
 
   async getTimeEntriesByDateRange(startDate: string, endDate: string): Promise<TimeEntry[]> {
@@ -202,10 +218,11 @@ export class TimeBeaconDatabase {
   }
 
   async getAllProjects(): Promise<Project[]> {
-    return await this.performOperation<Project[]>(
+    const result = await this.performOperation<Project[]>(
       'projects',
       (store) => store.getAll()
     );
+    return result || [];
   }
 
   // ===== CLIENTS =====
@@ -250,10 +267,11 @@ export class TimeBeaconDatabase {
   }
 
   async getAllClients(): Promise<Client[]> {
-    return await this.performOperation<Client[]>(
+    const result = await this.performOperation<Client[]>(
       'clients',
       (store) => store.getAll()
     );
+    return result || [];
   }
 
   // ===== SETTINGS =====

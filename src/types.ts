@@ -1,5 +1,6 @@
 export interface TimeEntry {
   id: string;
+  userId?: string; // Added for multi-tenant support
   date: string;
   startTime: string;
   endTime: string;
@@ -127,8 +128,12 @@ export interface UserSettings {
 export interface Client {
   id: string;
   name: string;
+  color: string; // Required for UI components
   email?: string;
   phone?: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
   address?: {
     street: string;
     city: string;
@@ -139,9 +144,6 @@ export interface Client {
   contactPerson?: string;
   website?: string;
   notes?: string;
-  active: boolean;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export type NavigationItem = 'dashboard' | 'reports' | 'ai-insights' | 'integrations' | 'permissions' | 'settings' | 'privacy';

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick Gmail Test - Bypass Console</title>
+</head>
+<body>
+    <h1>🚀 Quick Gmail Connection Test</h1>
+    <p>This bypasses your main app to test Gmail connection directly with your backend.</p>
+    
+    <button onclick="connectGmail()">Connect Gmail Now</button>
+    <div id="result"></div>
+
+    <script>
+        async function connectGmail() {
+            try {
+                // Get auth URL from your working backend
+                const response = await fetch('http://localhost:3003/auth/google/url');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Open Google OAuth in current window (easier for testing)
+                    document.getElementById('result').innerHTML = `
+                        <p>✅ Backend generated OAuth URL successfully!</p>
+                        <p><a href="${data.authUrl}" target="_blank">🔗 Click here to authenticate with Google</a></p>
+                        <p style="font-size: 12px; color: #666;">
+                            After authentication, you'll be redirected to a callback page. 
+                            The connection process will complete there.
+                        </p>
+                    `;
+                } else {
+                    document.getElementById('result').innerHTML = `<p>❌ Failed: ${JSON.stringify(data)}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<p>❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 /**
- * AI Settings Component
- * Configure and monitor the real AI processing system
+ * AI Control Center Component
+ * Configure AI agent settings for automatic time tracking from workplace data
  */
 
 import React, { useState, useEffect } from 'react';
@@ -8,16 +8,74 @@ import { aiService } from '../services/aiService';
 import { contentAnalyzer } from '../services/contentAnalyzer';
 import { calendarIntegration } from '../services/calendarIntegration';
 
-interface AISettingsProps {
+// AI Control Center Settings Interface
+interface AIControlSettings {
+  confidenceThreshold: number;
+  descriptionLength: 'brief' | 'standard' | 'detailed';
+  autoApprove: boolean;
+  gmailDomainFilter: {
+    enabled: boolean;
+    companyDomain: string;
+    excludeInternal: boolean;
+  };
+  slackChannelFilter: {
+    enabled: boolean;
+    includedChannels: string[];
+    keywords: string[];
+  };
+  slackParticipantFilter: {
+    enabled: boolean;
+    includedParticipants: string[];
+  };
+  retentionPolicy: {
+    deleteRawDataAfterProcessing: boolean;
+    keepStructuredDataDays: number;
+  };
+}
+
+interface AIControlCenterProps {
   onClose?: () => void;
 }
 
-export const AISettings: React.FC<AISettingsProps> = ({ onClose }) => {
+export const AIControlCenter: React.FC<AIControlCenterProps> = ({ onClose }) => {
   const [aiStatus, setAiStatus] = useState(aiService.getStatus());
   const [analyzerStats, setAnalyzerStats] = useState(contentAnalyzer.getStats());
   const [calendarStatus, setCalendarStatus] = useState(calendarIntegration.getStatus());
   const [isTestingAI, setIsTestingAI] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
+
+  // AI Control Settings State
+  const [settings, setSettings] = useState<AIControlSettings>({
+    confidenceThreshold: 0.80,
+    descriptionLength: 'standard',
+    autoApprove: false,
+    gmailDomainFilter: {
+      enabled: true,
+      companyDomain: '@timebeacon.io',
+      excludeInternal: true
+    },
+    slackChannelFilter: {
+      enabled: true,
+      includedChannels: [],
+      keywords: ['client', 'project', 'meeting']
+    },
+    slackParticipantFilter: {
+      enabled: false,
+      includedParticipants: []
+    },
+    retentionPolicy: {
+      deleteRawDataAfterProcessing: true,
+      keepStructuredDataDays: 30
+    }
+  });
+
+  // Load settings from localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('aiControlSettings');
+    if (savedSettings) {
+      setSettings(JSON.parse(savedSettings));
+    }
+  }, []);
 
   // Update status every 5 seconds
   useEffect(() => {
@@ -29,6 +87,58 @@ export const AISettings: React.FC<AISettingsProps> = ({ onClose }) => {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Save settings to localStorage
+  const saveSettings = (newSettings: AIControlSettings) => {
+    setSettings(newSettings);
+    localStorage.setItem('aiControlSettings', JSON.stringify(newSettings));
+  };
+
+  const updateSetting = (path: string, value: any) => {
+    const newSettings = { ...settings };
+    const keys = path.split('.');
+    let current: any = newSettings;
+    
+    for (let i = 0; i < keys.length - 1; i++) {
+      current = current[keys[i]];
+    }
+    
+    current[keys[keys.length - 1]] = value;
+    saveSettings(newSettings);
+  };
+
+  const addToList = (path: string, value: string) => {
+    const newSettings = { ...settings };
+    const keys = path.split('.');
+    let current: any = newSettings;
+    
+    for (let i = 0; i < keys.length - 1; i++) {
+      current = current[keys[i]];
+    }
+    
+    const list = current[keys[keys.length - 1]];
+    if (!list.includes(value) && value.trim()) {
+      list.push(value.trim());
+      saveSettings(newSettings);
+    }
+  };
+
+  const removeFromList = (path: string, value: string) => {
+    const newSettings = { ...settings };
+    const keys = path.split('.');
+    let current: any = newSettings;
+    
+    for (let i = 0; i < keys.length - 1; i++) {
+      current = current[keys[i]];
+    }
+    
+    const list = current[keys[keys.length - 1]];
+    const index = list.indexOf(value);
+    if (index > -1) {
+      list.splice(index, 1);
+      saveSettings(newSettings);
+    }
+  };
 
   const handleTestAI = async () => {
     setIsTestingAI(true);
@@ -65,9 +175,9 @@ export const AISettings: React.FC<AISettingsProps> = ({ onClose }) => {
   return (
     <div className="content-card">
       <div className="card-header">
-        <h2 className="card-title">🤖 AI Processing System</h2>
+        <h2 className="card-title">🎯 AI Control Center</h2>
         <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0 0' }}>
-          Configure and monitor your local AI processing capabilities
+          Configure intelligent time tracking from workplace activity data
         </p>
         {onClose && (
           <button className="btn btn-secondary" onClick={onClose}>
@@ -78,9 +188,270 @@ export const AISettings: React.FC<AISettingsProps> = ({ onClose }) => {
       
       <div style={{ padding: '32px' }}>
         
+        {/* Processing Configuration */}
+        <div className="settings-section">
+          <h3 className="settings-section-title">⚙️ Processing Configuration</h3>
+          
+          <div style={{ display: 'grid', gap: '24px', marginBottom: '32px' }}>
+            {/* Confidence Threshold */}
+            <div className="setting-item">
+              <label className="setting-label">
+                🎯 Confidence Threshold
+                <span className="setting-description">Minimum AI confidence required for auto-approval (below this requires review)</span>
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="0.95"
+                  step="0.05"
+                  value={settings.confidenceThreshold}
+                  onChange={(e) => updateSetting('confidenceThreshold', parseFloat(e.target.value))}
+                  style={{ flex: 1 }}
+                />
+                <span className="confidence-value">
+                  {Math.round(settings.confidenceThreshold * 100)}%
+                </span>
+                <label className="checkbox-container">
+                  <input
+                    type="checkbox"
+                    checked={settings.autoApprove}
+                    onChange={(e) => updateSetting('autoApprove', e.target.checked)}
+                  />
+                  Auto-approve high confidence entries
+                </label>
+              </div>
+            </div>
+
+            {/* Description Length */}
+            <div className="setting-item">
+              <label className="setting-label">
+                📝 Description Length
+                <span className="setting-description">How detailed should AI-generated descriptions be?</span>
+              </label>
+              <div className="radio-group">
+                {[
+                  { value: 'brief', label: 'Brief (1-20 words)', example: '"Client pricing discussion"' },
+                  { value: 'standard', label: 'Standard (20-40 words)', example: '"Exchanged emails with client about pricing adjustments and timeline estimates"' },
+                  { value: 'detailed', label: 'Detailed (40-100 words)', example: '"Extensive email thread with client Bob regarding pricing revisions to the proposal. Clarified cost structures, updated timeline estimates, and confirmed next steps for contract approval."' }
+                ].map(option => (
+                  <label key={option.value} className="radio-option">
+                    <input
+                      type="radio"
+                      name="descriptionLength"
+                      value={option.value}
+                      checked={settings.descriptionLength === option.value}
+                      onChange={(e) => updateSetting('descriptionLength', e.target.value)}
+                    />
+                    <div>
+                      <strong>{option.label}</strong>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                        Example: {option.example}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Gmail Filters */}
+        <div className="settings-section">
+          <h3 className="settings-section-title">📧 Gmail Integration</h3>
+          
+          <div style={{ display: 'grid', gap: '16px' }}>
+            <label className="checkbox-container">
+              <input
+                type="checkbox"
+                checked={settings.gmailDomainFilter.enabled}
+                onChange={(e) => updateSetting('gmailDomainFilter.enabled', e.target.checked)}
+              />
+              Enable Gmail domain filtering
+            </label>
+            
+            {settings.gmailDomainFilter.enabled && (
+              <div className="filter-config">
+                <div className="setting-item">
+                  <label className="setting-label">Company Domain</label>
+                  <input
+                    type="text"
+                    value={settings.gmailDomainFilter.companyDomain}
+                    onChange={(e) => updateSetting('gmailDomainFilter.companyDomain', e.target.value)}
+                    placeholder="@yourcompany.com"
+                    className="setting-input"
+                  />
+                </div>
+                
+                <label className="checkbox-container">
+                  <input
+                    type="checkbox"
+                    checked={settings.gmailDomainFilter.excludeInternal}
+                    onChange={(e) => updateSetting('gmailDomainFilter.excludeInternal', e.target.checked)}
+                  />
+                  Only track emails with external participants (exclude internal company emails)
+                </label>
+                
+                <div className="info-box">
+                  <p><strong>How it works:</strong> Only emails involving people outside your company domain will be processed for time tracking. Internal company discussions will be ignored.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Slack Filters */}
+        <div className="settings-section">
+          <h3 className="settings-section-title">💬 Slack Integration</h3>
+          
+          <div style={{ display: 'grid', gap: '24px' }}>
+            {/* Channel Filter */}
+            <div>
+              <label className="checkbox-container">
+                <input
+                  type="checkbox"
+                  checked={settings.slackChannelFilter.enabled}
+                  onChange={(e) => updateSetting('slackChannelFilter.enabled', e.target.checked)}
+                />
+                Enable Slack channel filtering
+              </label>
+              
+              {settings.slackChannelFilter.enabled && (
+                <div className="filter-config">
+                  <div className="setting-item">
+                    <label className="setting-label">Channel Keywords</label>
+                    <div className="tag-input-container">
+                      <div className="tags">
+                        {settings.slackChannelFilter.keywords.map(keyword => (
+                          <span key={keyword} className="tag">
+                            {keyword}
+                            <button 
+                              onClick={() => removeFromList('slackChannelFilter.keywords', keyword)}
+                              className="tag-remove"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Add keyword (e.g., 'client', 'project')..."
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            addToList('slackChannelFilter.keywords', e.currentTarget.value);
+                            e.currentTarget.value = '';
+                          }
+                        }}
+                        className="tag-input"
+                      />
+                    </div>
+                    <div className="info-box">
+                      <p>Only process messages from channels containing these keywords in their name.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Participant Filter */}
+            <div>
+              <label className="checkbox-container">
+                <input
+                  type="checkbox"
+                  checked={settings.slackParticipantFilter.enabled}
+                  onChange={(e) => updateSetting('slackParticipantFilter.enabled', e.target.checked)}
+                />
+                Enable Slack participant filtering
+              </label>
+              
+              {settings.slackParticipantFilter.enabled && (
+                <div className="filter-config">
+                  <div className="setting-item">
+                    <label className="setting-label">Included Participants</label>
+                    <div className="tag-input-container">
+                      <div className="tags">
+                        {settings.slackParticipantFilter.includedParticipants.map(participant => (
+                          <span key={participant} className="tag">
+                            @{participant}
+                            <button 
+                              onClick={() => removeFromList('slackParticipantFilter.includedParticipants', participant)}
+                              className="tag-remove"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Add username (without @)..."
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            addToList('slackParticipantFilter.includedParticipants', e.currentTarget.value);
+                            e.currentTarget.value = '';
+                          }
+                        }}
+                        className="tag-input"
+                      />
+                    </div>
+                    <div className="info-box">
+                      <p>Only process messages that include these specific participants.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Data Retention */}
+        <div className="settings-section">
+          <h3 className="settings-section-title">🔒 Data Retention & Privacy</h3>
+          
+          <div style={{ display: 'grid', gap: '16px' }}>
+            <label className="checkbox-container">
+              <input
+                type="checkbox"
+                checked={settings.retentionPolicy.deleteRawDataAfterProcessing}
+                onChange={(e) => updateSetting('retentionPolicy.deleteRawDataAfterProcessing', e.target.checked)}
+              />
+              Delete raw transcripts/emails/messages after processing (recommended)
+            </label>
+            
+            <div className="setting-item">
+              <label className="setting-label">
+                Keep structured time entries for
+                <span className="setting-description">How long to retain processed time entries before cleanup</span>
+              </label>
+              <select 
+                value={settings.retentionPolicy.keepStructuredDataDays}
+                onChange={(e) => updateSetting('retentionPolicy.keepStructuredDataDays', parseInt(e.target.value))}
+                className="setting-select"
+              >
+                <option value={7}>7 days</option>
+                <option value={30}>30 days</option>
+                <option value={90}>90 days</option>
+                <option value={365}>1 year</option>
+                <option value={-1}>Forever</option>
+              </select>
+            </div>
+            
+            <div className="privacy-info">
+              <h4>🛡️ Privacy Protection</h4>
+              <ul>
+                <li><strong>Local Processing:</strong> All AI analysis happens on your device</li>
+                <li><strong>No External Transmission:</strong> Raw workplace data never leaves your computer</li>
+                <li><strong>Selective Storage:</strong> Only structured time entries are saved, not raw content</li>
+                <li><strong>User Control:</strong> Review and approve all AI-generated entries</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         {/* AI Service Status */}
         <div className="settings-section">
-          <h3 className="settings-section-title">🧠 Local AI Engine (Ollama)</h3>
+          <h3 className="settings-section-title">🧠 AI Engine Status</h3>
           
           <div className="status-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
             <div className="status-card">
@@ -310,7 +681,71 @@ export const AISettings: React.FC<AISettingsProps> = ({ onClose }) => {
             </div>
           </div>
         </div>
+
+        {/* Quick Actions */}
+        <div className="settings-section">
+          <h3 className="settings-section-title">⚡ Quick Actions</h3>
+          
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <button className="btn btn-secondary" onClick={() => {
+              if (confirm('Reset all AI Control settings to defaults?')) {
+                const defaultSettings: AIControlSettings = {
+                  confidenceThreshold: 0.80,
+                  descriptionLength: 'standard',
+                  autoApprove: false,
+                  gmailDomainFilter: {
+                    enabled: true,
+                    companyDomain: '@timebeacon.io',
+                    excludeInternal: true
+                  },
+                  slackChannelFilter: {
+                    enabled: true,
+                    includedChannels: [],
+                    keywords: ['client', 'project', 'meeting']
+                  },
+                  slackParticipantFilter: {
+                    enabled: false,
+                    includedParticipants: []
+                  },
+                  retentionPolicy: {
+                    deleteRawDataAfterProcessing: true,
+                    keepStructuredDataDays: 30
+                  }
+                };
+                saveSettings(defaultSettings);
+              }
+            }}>
+              🔄 Reset to Defaults
+            </button>
+            
+            <button className="btn btn-primary" onClick={() => {
+              const exported = JSON.stringify(settings, null, 2);
+              navigator.clipboard.writeText(exported);
+              alert('Settings copied to clipboard!');
+            }}>
+              📋 Export Settings
+            </button>
+            
+            <button className="btn btn-secondary" onClick={() => {
+              const imported = prompt('Paste exported settings JSON:');
+              if (imported) {
+                try {
+                  const parsedSettings = JSON.parse(imported);
+                  saveSettings(parsedSettings);
+                  alert('Settings imported successfully!');
+                } catch (e) {
+                  alert('Invalid settings format');
+                }
+              }
+            }}>
+              📥 Import Settings
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
+
+// Export both for backward compatibility
+export const AISettings = AIControlCenter;

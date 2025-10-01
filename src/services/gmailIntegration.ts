@@ -21,12 +21,8 @@ interface GmailThread {
 export class GmailIntegrationService {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
-  private readonly API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-  private readonly SCOPES = [
-    'https://www.googleapis.com/auth/gmail.readonly',
-    'https://www.googleapis.com/auth/gmail.metadata'
-  ];
-  private demoMode: boolean = !process.env.REACT_APP_GOOGLE_CLIENT_ID; // Use real mode if client ID exists
+  private readonly API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  private demoMode: boolean = !import.meta.env.VITE_GOOGLE_CLIENT_ID; // Use real mode if client ID exists
 
   constructor() {
     this.loadStoredTokens();
@@ -90,38 +86,6 @@ export class GmailIntegrationService {
     }
   }
 
-  private async loadGoogleAPI(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (typeof window !== 'undefined' && !window.gapi) {
-        const script = document.createElement('script');
-        script.src = 'https://apis.google.com/js/api.js';
-        script.onload = () => {
-          window.gapi.load('auth2', () => {
-            // Use demo client ID for now - in production, this would be your real client ID
-            const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || 'demo-client-id';
-            if (clientId === 'demo-client-id') {
-              console.warn('Demo mode: Using mock Gmail integration');
-              resolve();
-              return;
-            }
-            
-            window.gapi.auth2.init({
-              client_id: clientId
-            }).then(() => {
-              resolve();
-            }).catch((error) => {
-              console.error('Failed to initialize Google Auth:', error);
-              reject(error);
-            });
-          });
-        };
-        script.onerror = reject;
-        document.head.appendChild(script);
-      } else {
-        resolve();
-      }
-    });
-  }
 
   async authenticateGmail(): Promise<boolean> {
     try {

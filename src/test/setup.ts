@@ -5,6 +5,9 @@ import { vi, beforeEach } from 'vitest'
 declare global {
   interface Window {
     indexedDB: any;
+    localStorage: any;
+    location: any;
+    confirm: any;
   }
   // Add global object for Node.js compatibility
   var global: typeof globalThis;
@@ -87,6 +90,46 @@ Object.defineProperty(window, 'indexedDB', {
   writable: true
 });
 
+// Mock localStorage
+const localStorageMock = {
+  getItem: vi.fn((key: string) => null),
+  setItem: vi.fn((key: string, value: string) => {}),
+  removeItem: vi.fn((key: string) => {}),
+  clear: vi.fn(() => {}),
+  length: 0,
+  key: vi.fn((index: number) => null)
+};
+
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock,
+  writable: true
+});
+
+// Mock window.location
+Object.defineProperty(window, 'location', {
+  value: {
+    origin: 'http://localhost:3000',
+    href: 'http://localhost:3000/',
+    protocol: 'http:',
+    host: 'localhost:3000',
+    hostname: 'localhost',
+    port: '3000',
+    pathname: '/',
+    search: '',
+    hash: '',
+    assign: vi.fn(),
+    reload: vi.fn(),
+    replace: vi.fn()
+  },
+  writable: true
+});
+
+// Mock window.confirm
+Object.defineProperty(window, 'confirm', {
+  value: vi.fn(() => true),
+  writable: true
+});
+
 // Mock crypto.randomUUID for consistent testing
 Object.defineProperty(global, 'crypto', {
   value: {
@@ -94,7 +137,27 @@ Object.defineProperty(global, 'crypto', {
   }
 });
 
+// Mock import.meta.env for Vite environment variables
+Object.defineProperty(globalThis, 'import', {
+  value: {
+    meta: {
+      env: {
+        VITE_GOOGLE_CLIENT_ID: 'test-client-id',
+        VITE_GOOGLE_CLIENT_SECRET: 'test-client-secret',
+        MODE: 'test',
+        DEV: false,
+        PROD: false
+      }
+    }
+  },
+  writable: true
+});
+
 // Reset all mocks before each test
 beforeEach(() => {
   vi.clearAllMocks();
+  // Reset localStorage mock
+  localStorageMock.getItem.mockReturnValue(null);
+  // Reset mock data
+  mockData.clear();
 });

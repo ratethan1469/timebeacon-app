@@ -1,0 +1,52 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy-prod:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-js-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run full test suite
+      run: npm run test:all
+
+    - name: Run type check
+      run: npm run type-check
+
+    - name: Build for Production
+      run: npm run build:prod
+      env:
+        VITE_API_URL: https://api.timebeacon.io
+        VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        VITE_GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        VITE_GOOGLE_REDIRECT_URI: https://app.timebeacon.io/api/auth/google/callback
+
+    - name: Deploy to Production (Vercel)
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod --build-env VITE_APP_ENV=production'
+        alias-domains: app.timebeacon.io
+
+    - name: Notify production deployment
+      run: |
+        echo "🎉 Production deployment completed!"
+        echo "🌐 Production App: https://app.timebeacon.io"
+        echo "✅ All systems live!"

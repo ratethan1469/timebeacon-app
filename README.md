@@ -1,126 +1,93 @@
-# TimeBeacon 🕒
+# TimeBeacon App
 
-A privacy-first, local-first time tracking application with AI-powered insights for professionals and teams.
+Professional time tracking application with Google integrations and AI-powered automation.
 
-## ✨ Features
+## 🌍 Environments
 
-- **Local-First Architecture** - All data stored locally with client-side encryption
-- **AI-Powered Insights** - Smart time tracking suggestions and analysis
-- **Privacy by Design** - Full control over your data with comprehensive privacy controls
-- **Calendar Integration** - Seamless sync with Google Calendar, Outlook, and more
-- **Team Collaboration** - Multi-platform integrations (Slack, Zoom, Teams, Gmail)
-- **Advanced Reporting** - Detailed analytics and customizable reports
-- **Weekly Calendar View** - Visual time tracking with drag-and-drop functionality
+- **Local Development**: http://localhost:3002
+- **QA Environment**: https://app.qa.timebeacon.io  
+- **Production**: https://app.timebeacon.io
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Node.js 16+ 
-- npm or yarn
-
-### Installation
+### Local Development
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd timebeacon-app
-
 # Install dependencies
 npm install
 
-# Start development server
+# Start backend server (port 3001)
+npm run dev:backend
+
+# Start frontend dev server (port 3002)
 npm run dev
 
-# Or for production
-npm run build
-npm start
+# Or run both simultaneously
+npm run dev:full
 ```
 
-### Available Scripts
+### Building & Deployment
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run test` - Run unit tests
-- `npm run test:e2e` - Run end-to-end tests
-- `npm run test:all` - Run all tests
-- `npm run lint` - Type checking
+```bash
+# Build for different environments
+npm run build          # Local build
+npm run build:qa        # QA build
+npm run build:prod      # Production build
 
-## 🏗️ Architecture
+# Deploy to different environments
+npm run deploy:qa       # Deploy to QA
+npm run deploy:prod     # Deploy to Production
+```
 
-### Core Components
+## 🔄 Deployment Workflow
 
-- **Dashboard** - Weekly calendar view with time entry management
-- **Time Entries** - Manual time entry creation and editing
-- **AI Insights** - Smart suggestions and productivity analytics  
-- **Reports** - Advanced reporting and data visualization
-- **Integrations** - Third-party service connections
-- **Privacy Controls** - Data ownership and retention settings
+### QA Workflow
+1. Create feature branch from `main`
+2. Make changes and test locally
+3. Push to `qa` branch
+4. GitHub Actions automatically deploys to `app.qa.timebeacon.io`
+5. Test thoroughly in QA environment
+6. When ready, merge `qa` → `main`
 
-### Tech Stack
+### Production Workflow
+1. Merge approved QA changes to `main` branch
+2. GitHub Actions automatically deploys to `app.timebeacon.io`
+3. Monitor production deployment
 
-- **Frontend**: React 19, TypeScript, Vite
-- **Testing**: Vitest, Playwright, Testing Library
-- **Storage**: Local IndexedDB with encryption
-- **AI**: Local content analysis and suggestion engine
+## 🔧 Configuration
 
-## 🔒 Privacy & Security
-
-TimeBeacon is built with privacy as a core principle:
-
-- **Local-First**: All data stays on your device
-- **End-to-End Encryption**: Client-side encryption for sensitive data
-- **No Cloud Dependencies**: Works completely offline
-- **Audit Logging**: Complete transparency of data access
-- **Emergency Controls**: Master pause and data wipe capabilities
-
-## 🔌 Integrations
-
-Supported integrations:
-- Google Calendar
-- Microsoft Outlook/Teams  
-- Slack
-- Zoom
-- Gmail
-- Salesforce
-- Jira
-
-## 📊 Time Tracking Features
-
-- **Automatic Detection** - AI-powered meeting and task recognition
-- **Manual Entry** - Flexible time entry with rich metadata
-- **Project Management** - Organize by clients, projects, and categories
-- **Billable Tracking** - Separate billable vs non-billable time
-- **Timer Functionality** - Real-time tracking with pause/resume
-- **Bulk Operations** - Batch edit multiple entries
+Environment-specific configurations:
+- `.env.local` - Local development
+- `.env.qa` - QA environment  
+- `.env.production` - Production environment
 
 ## 🧪 Testing
 
-The project includes comprehensive testing:
-
 ```bash
-# Unit tests
-npm run test
-
-# E2E tests  
-npm run test:e2e
-
-# Coverage report
-npm run test:coverage
-
-# All tests
-npm run test:all
+npm run test            # Unit tests
+npm run test:e2e        # End-to-end tests
+npm run test:all        # Full test suite
+npm run lint            # Type checking
 ```
 
-## 🤝 Contributing
+## 📱 Features
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
+- **Time Tracking**: Manual and automated time entry
+- **Google Integration**: Calendar, Gmail, Drive sync
+- **AI-Powered**: Smart categorization and suggestions
+- **Reporting**: Advanced analytics and exports
+- **Multi-tenant**: User authentication and data isolation
 
-## 📝 License
+## 🔐 Authentication
 
-This project is licensed under the ISC License.# timebeacon-app
-# timebeacon-app
+- JWT-based authentication
+- Google OAuth integration
+- MongoDB user storage
+
+## 📊 Tech Stack
+
+- **Frontend**: React, TypeScript, Vite
+- **Backend**: Node.js, Express, MongoDB
+- **Authentication**: JWT, Google OAuth
+- **Deployment**: Vercel, GitHub Actions
+- **Testing**: Vitest, Playwright

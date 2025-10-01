@@ -123,20 +123,45 @@ export const GoogleAuth: React.FC<GoogleAuthProps> = ({
     setIsAuthenticating(true);
     
     try {
-      const success = await googleService.authenticateGoogle();
+      // Get OAuth URL from backend
+      const response = await fetch('http://localhost:3003/auth/google/url');
+      const data = await response.json();
       
-      if (success) {
-        setIsAuthenticated(true);
-        onAuthSuccess();
+      if (data.success && data.authUrl) {
+        // Open OAuth flow in popup window
+        const popup = window.open(data.authUrl, 'google-auth', 'width=500,height=600');
         
-        // Load activity count
-        await loadActivityCount();
+        // Poll for popup closure (successful auth redirects and closes popup)
+        const pollTimer = setInterval(() => {
+          try {
+            if (popup?.closed) {
+              clearInterval(pollTimer);
+              // Check if auth was successful
+              checkAuthStatus();
+              setIsAuthenticating(false);
+            }
+          } catch (error) {
+            // Handle cross-origin errors
+            clearInterval(pollTimer);
+            setIsAuthenticating(false);
+          }
+        }, 1000);
+        
+        // Timeout after 2 minutes
+        setTimeout(() => {
+          clearInterval(pollTimer);
+          if (popup && !popup.closed) {
+            popup.close();
+          }
+          setIsAuthenticating(false);
+          onAuthError('Authentication timeout');
+        }, 120000);
+        
       } else {
-        onAuthError('Failed to authenticate with Google');
+        onAuthError('Failed to get authentication URL');
       }
     } catch (error) {
       onAuthError(`Authentication error: ${error}`);
-    } finally {
       setIsAuthenticating(false);
     }
   };

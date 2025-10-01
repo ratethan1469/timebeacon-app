@@ -1,0 +1,199 @@
+
+> timebeacon-app@1.0.1 dev
+> vite
+
+
+  VITE v7.0.0  ready in 148 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: use --host to expose
+10:29:01 AM [vite] (client) hmr update /src/components/Login.tsx
+10:29:06 AM [vite] (client) hmr update /src/components/Login.tsx
+10:29:22 AM [vite] (client) hmr update /src/contexts/AuthContext.tsx, /src/components/PermissionsManager.tsx
+10:29:22 AM [vite] (client) hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+10:29:22 AM [vite] (client) hmr update /src/App.tsx, /src/components/ProtectedRoute.tsx, /src/components/Login.tsx, /src/components/Sidebar.tsx, /src/components/PermissionsManager.tsx, /src/components/EnhancedReports.tsx
+10:29:30 AM [vite] (client) hmr update /src/components/Login.tsx
+10:31:29 AM [vite] (client) hmr update /src/contexts/AuthContext.tsx, /src/components/PermissionsManager.tsx
+10:31:29 AM [vite] (client) Pre-transform error: Transform failed with 1 error:
+/Users/miriamritter/Desktop/timebeacon-app/src/services/auth.ts:88:4: ERROR: Unexpected "*"
+  Plugin: vite:esbuild
+  File: /Users/miriamritter/Desktop/timebeacon-app/src/services/auth.ts:88:4
+  
+  Unexpected "*"
+  86 |        throw error;
+  87 |      }
+  88 |      */
+     |      ^
+  89 |    }
+  90 |  
+  
+10:31:29 AM [vite] (client) Pre-transform error: Transform failed with 1 error:
+/Users/miriamritter/Desktop/timebeacon-app/src/services/auth.ts:88:4: ERROR: Unexpected "*"
+  Plugin: vite:esbuild
+  File: /Users/miriamritter/Desktop/timebeacon-app/src/services/auth.ts:88:4
+  
+  Unexpected "*"
+  86 |        throw error;
+  87 |      }
+  88 |      */
+     |      ^
+  89 |    }
+  90 |  
+  
+10:31:29 AM [vite] Internal server error: Transform failed with 1 error:
+/Users/miriamritter/Desktop/timebeacon-app/src/services/auth.ts:88:4: ERROR: Unexpected "*"
+  Plugin: vite:esbuild
+  File: /Users/miriamritter/Desktop/timebeacon-app/src/services/auth.ts:88:4
+  
+  Unexpected "*"
+  86 |        throw error;
+  87 |      }
+  88 |      */
+     |      ^
+  89 |    }
+  90 |  
+  
+      at failureErrorWithLog (/Users/miriamritter/Desktop/timebeacon-app/node_modules/esbuild/lib/main.js:1463:15)
+      at /Users/miriamritter/Desktop/timebeacon-app/node_modules/esbuild/lib/main.js:734:50
+      at responseCallbacks.<computed> (/Users/miriamritter/Desktop/timebeacon-app/node_modules/esbuild/lib/main.js:601:9)
+      at handleIncomingPacket (/Users/miriamritter/Desktop/timebeacon-app/node_modules/esbuild/lib/main.js:656:12)
+      at Socket.readFromStdout (/Users/miriamritter/Desktop/timebeacon-app/node_modules/esbuild/lib/main.js:579:7)
+      at Socket.emit (node:events:518:28)
+      at addChunk (node:internal/streams/readable:561:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+      at Readable.push (node:internal/streams/readable:392:5)
+      at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+10:31:29 AM [vite] Internal server error: Transform failed with 1 error:
+/Users/miriamritter/Desktop/timebeacon-app/src/services/auth.ts:88:4: ERROR: Unexpected "*"
+  Plugin: vite:esbuild
+  File: /Users/miriamritter/Desktop/timebeacon-app/src/services/auth.ts:88:4
+  
+  Unexpected "*"
+  86 |        throw error;
+  87 |      }
+  88 |      */
+     |      ^
+  89 |    }
+  90 |  
+  
+      at failureErrorWithLog (/Users/miriamritter/Desktop/timebeacon-app/node_modules/esbuild/lib/main.js:1463:15)
+      at /Users/miriamritter/Desktop/timebeacon-app/node_modules/esbuild/lib/main.js:734:50
+      at responseCallbacks.<computed> (/Users/miriamritter/Desktop/timebeacon-app/node_modules/esbuild/lib/main.js:601:9)
+      at handleIncomingPacket (/Users/miriamritter/Desktop/timebeacon-app/node_modules/esbuild/lib/main.js:656:12)
+      at Socket.readFromStdout (/Users/miriamritter/Desktop/timebeacon-app/node_modules/esbuild/lib/main.js:579:7)
+      at Socket.emit (node:events:518:28)
+      at addChunk (node:internal/streams/readable:561:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+      at Readable.push (node:internal/streams/readable:392:5)
+      at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+10:31:29 AM [vite] Internal server error: Transform failed with 1 error:
+/Users/miriamritter/Desktop/timebeacon-app/src/services/auth.ts:88:4: ERROR: Unexpected "*"
+  Plugin: vite:esbuild
+  File: /Users/miriamritter/Desktop/timebeacon-app/src/services/auth.ts:88:4
+  
+  Unexpected "*"
+  86 |        throw error;
+  87 |      }
+  88 |      */
+     |      ^
+  89 |    }
+  90 |  
+  
+      at failureErrorWithLog (/Users/miriamritter/Desktop/timebeacon-app/node_modules/esbuild/lib/main.js:1463:15)
+      at /Users/miriamritter/Desktop/timebeacon-app/node_modules/esbuild/lib/main.js:734:50
+      at responseCallbacks.<computed> (/Users/miriamritter/Desktop/timebeacon-app/node_modules/esbuild/lib/main.js:601:9)
+      at handleIncomingPacket (/Users/miriamritter/Desktop/timebeacon-app/node_modules/esbuild/lib/main.js:656:12)
+      at Socket.readFromStdout (/Users/miriamritter/Desktop/timebeacon-app/node_modules/esbuild/lib/main.js:579:7)
+      at Socket.emit (node:events:518:28)
+      at addChunk (node:internal/streams/readable:561:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+      at Readable.push (node:internal/streams/readable:392:5)
+      at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+10:31:47 AM [vite] (client) hmr update /src/contexts/AuthContext.tsx, /src/components/PermissionsManager.tsx
+10:31:47 AM [vite] (client) hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+10:31:47 AM [vite] (client) hmr update /src/App.tsx, /src/components/ProtectedRoute.tsx, /src/components/Login.tsx, /src/components/Sidebar.tsx, /src/components/PermissionsManager.tsx, /src/components/EnhancedReports.tsx
+10:32:17 AM [vite] (client) hmr update /src/contexts/AuthContext.tsx
+10:32:17 AM [vite] (client) hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+10:32:17 AM [vite] (client) hmr update /src/App.tsx, /src/components/ProtectedRoute.tsx, /src/components/Login.tsx, /src/components/Sidebar.tsx, /src/components/PermissionsManager.tsx, /src/components/EnhancedReports.tsx
+10:32:22 AM [vite] (client) hmr update /src/contexts/AuthContext.tsx
+10:32:22 AM [vite] (client) hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+10:32:22 AM [vite] (client) hmr update /src/App.tsx, /src/components/ProtectedRoute.tsx, /src/components/Login.tsx, /src/components/Sidebar.tsx, /src/components/PermissionsManager.tsx, /src/components/EnhancedReports.tsx
+10:32:22 AM [vite] (client) hmr update /src/contexts/AuthContext.tsx
+10:32:22 AM [vite] (client) hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+10:32:22 AM [vite] (client) hmr update /src/App.tsx, /src/components/ProtectedRoute.tsx, /src/components/Login.tsx, /src/components/Sidebar.tsx, /src/components/PermissionsManager.tsx, /src/components/EnhancedReports.tsx
+4:09:51 PM [vite] (client) hmr update /src/components/AIInsights.tsx, /src/contexts/AuthContext.tsx
+4:09:59 PM [vite] (client) hmr update /src/components/AIInsights.tsx, /src/contexts/AuthContext.tsx
+4:29:28 PM [vite] (client) hmr update /src/App.tsx
+4:29:31 PM [vite] (client) hmr update /src/App.tsx
+4:30:46 PM [vite] (client) hmr update /src/components/CompanySignup.tsx
+4:30:59 PM [vite] (client) hmr update /src/components/CompanySignup.tsx
+4:32:01 PM [vite] (client) hmr update /src/components/CompanySignup.tsx
+4:33:45 PM [vite] (client) hmr update /src/components/Login.tsx
+4:34:29 PM [vite] (client) hmr update /src/components/Login.tsx
+4:35:52 PM [vite] (client) hmr update /src/components/AIInsights.tsx, /src/contexts/AuthContext.tsx, /src/components/CompanySignup.tsx
+4:35:52 PM [vite] (client) hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+4:35:52 PM [vite] (client) hmr update /src/App.tsx, /src/components/ProtectedRoute.tsx, /src/components/Login.tsx, /src/components/Sidebar.tsx, /src/components/PermissionsManager.tsx, /src/components/EnhancedReports.tsx
+4:37:17 PM [vite] (client) hmr update /src/contexts/AuthContext.tsx
+4:37:17 PM [vite] (client) hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+4:37:17 PM [vite] (client) hmr update /src/App.tsx, /src/components/ProtectedRoute.tsx, /src/components/Login.tsx, /src/components/Sidebar.tsx, /src/components/PermissionsManager.tsx, /src/components/EnhancedReports.tsx
+4:37:21 PM [vite] (client) hmr update /src/contexts/AuthContext.tsx
+4:37:21 PM [vite] (client) hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+4:37:21 PM [vite] (client) hmr update /src/App.tsx, /src/components/ProtectedRoute.tsx, /src/components/Login.tsx, /src/components/Sidebar.tsx, /src/components/PermissionsManager.tsx, /src/components/EnhancedReports.tsx
+4:37:30 PM [vite] (client) hmr update /src/components/AIInsights.tsx, /src/contexts/AuthContext.tsx, /src/components/CompanySignup.tsx
+4:37:30 PM [vite] (client) hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+4:37:30 PM [vite] (client) hmr update /src/App.tsx, /src/components/ProtectedRoute.tsx, /src/components/Login.tsx, /src/components/Sidebar.tsx, /src/components/PermissionsManager.tsx, /src/components/EnhancedReports.tsx
+4:43:55 PM [vite] (client) hmr update /src/components/AIInsights.tsx, /src/contexts/AuthContext.tsx, /src/components/CompanySignup.tsx
+4:43:55 PM [vite] (client) hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+4:43:55 PM [vite] (client) hmr update /src/App.tsx, /src/components/ProtectedRoute.tsx, /src/components/Login.tsx, /src/components/Sidebar.tsx, /src/components/PermissionsManager.tsx, /src/components/EnhancedReports.tsx
+4:44:46 PM [vite] (client) hmr update /src/components/AIInsights.tsx, /src/contexts/AuthContext.tsx, /src/components/CompanySignup.tsx
+4:44:47 PM [vite] (client) hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+4:44:47 PM [vite] (client) hmr update /src/App.tsx, /src/components/ProtectedRoute.tsx, /src/components/Login.tsx, /src/components/Sidebar.tsx, /src/components/PermissionsManager.tsx, /src/components/EnhancedReports.tsx
+4:44:50 PM [vite] .env.local changed, restarting server...
+4:44:50 PM [vite] .env.local changed, restarting server...
+4:44:50 PM [vite] server restarted.
+5:19:49 PM [vite] (client) hmr update /src/components/AppContent.tsx, /src/components/AIInsights.tsx, /src/components/Dashboard.tsx
+5:20:04 PM [vite] (client) hmr update /src/components/PermissionsManager.tsx, /src/contexts/AuthContext.tsx
+5:20:09 PM [vite] (client) hmr update /src/components/AppContent.tsx, /src/components/AIInsights.tsx, /src/components/Dashboard.tsx
+5:20:45 PM [vite] (client) hmr update /src/components/Login.tsx
+5:20:50 PM [vite] (client) hmr update /src/components/Login.tsx
+5:20:55 PM [vite] (client) hmr update /src/components/Login.tsx
+5:21:00 PM [vite] (client) hmr update /src/components/Login.tsx
+5:21:05 PM [vite] (client) hmr update /src/components/Login.tsx
+5:21:56 PM [vite] (client) hmr update /src/components/Dashboard.tsx
+5:24:48 PM [vite] (client) hmr update /src/contexts/AuthContext.tsx
+5:30:27 PM [vite] (client) hmr update /src/components/AIInsights.tsx, /src/components/Dashboard.tsx
+5:30:34 PM [vite] (client) hmr update /src/components/AIInsights.tsx, /src/components/Dashboard.tsx
+5:30:42 PM [vite] (client) hmr update /src/components/AIInsights.tsx, /src/components/Dashboard.tsx
+5:30:47 PM [vite] (client) hmr update /src/components/AIInsights.tsx, /src/components/Dashboard.tsx
+5:31:01 PM [vite] (client) hmr update /src/components/AppContent.tsx, /src/components/AIInsights.tsx, /src/components/Dashboard.tsx, /src/components/EnhancedReports.tsx
+5:31:01 PM [vite] (client) hmr update /src/components/AppContent.tsx, /src/components/AIInsights.tsx, /src/components/Dashboard.tsx, /src/components/EnhancedReports.tsx
+5:31:12 PM [vite] (client) hmr update /src/components/AppContent.tsx, /src/components/AIInsights.tsx, /src/components/Dashboard.tsx, /src/components/EnhancedReports.tsx
+5:31:38 PM [vite] (client) hmr update /src/components/AppContent.tsx, /src/components/AIInsights.tsx, /src/components/Dashboard.tsx, /src/components/EnhancedReports.tsx
+5:31:45 PM [vite] (client) hmr update /src/components/AppContent.tsx, /src/components/AIInsights.tsx, /src/components/Dashboard.tsx, /src/components/EnhancedReports.tsx
+5:31:51 PM [vite] (client) hmr update /src/components/AppContent.tsx, /src/components/AIInsights.tsx, /src/components/Dashboard.tsx, /src/components/EnhancedReports.tsx
+5:32:13 PM [vite] vite.config.ts changed, restarting server...
+5:32:13 PM [vite] server restarted.
+5:32:55 PM [vite] vite.config.ts changed, restarting server...
+5:32:55 PM [vite] server restarted.
+4:07:19 PM [vite] .env changed, restarting server...
+4:07:24 PM [vite] server restarted.
+4:10:27 PM [vite] .env changed, restarting server...
+4:10:28 PM [vite] server restarted.
+4:11:27 PM [vite] .env changed, restarting server...
+4:11:27 PM [vite] server restarted.
+4:13:24 PM [vite] (client) page reload test-oauth.html
+3:52:08 PM [vite] (client) page reload test-oauth-flow.html
+3:59:43 PM [vite] (client) page reload test-oauth-flow.html
+4:01:36 PM [vite] (client) page reload simple-test.html
+4:04:34 PM [vite] (client) page reload simple-test.html
+4:09:05 PM [vite] .env changed, restarting server...
+4:09:05 PM [vite] server restarted.
+4:10:34 PM [vite] (client) page reload test-ai-pipeline-demo.html
+4:13:04 PM [vite] (client) page reload quick-gmail-test.html
+4:21:21 PM [vite] (client) page reload test-cors-fix.html
+4:26:34 PM [vite] (client) page reload test-with-demo-token.html
+4:37:47 PM [vite] (client) page reload test-exact-config.html
+4:39:46 PM [vite] .env changed, restarting server...
+4:39:46 PM [vite] server restarted.
+5:14:26 PM [vite] .env changed, restarting server...
+5:14:26 PM [vite] server restarted.

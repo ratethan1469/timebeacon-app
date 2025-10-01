@@ -54,7 +54,7 @@ export const IntegrationTest: React.FC = () => {
       
       validation.warnings.forEach(warning => addLog(`   WARNING: ${warning}`));
     } catch (error) {
-      addLog(`❌ Configuration validation error: ${error.message}`);
+      addLog(`❌ Configuration validation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -95,15 +95,15 @@ export const IntegrationTest: React.FC = () => {
         }
       });
     } catch (error) {
-      addLog(`❌ Test execution failed: ${error.message}`);
+      addLog(`❌ Test execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setTestState(prev => ({ ...prev, isRunning: false }));
     }
   };
 
-  const startOAuthFlow = () => {
+  const startOAuthFlow = async () => {
     try {
       addLog('🔐 Starting OAuth 2.0 flow...');
-      const { url, state } = googleIntegrationService.generateAuthUrl();
+      const { url, state } = await googleIntegrationService.generateAuthUrl();
       
       // Store state for validation
       sessionStorage.setItem('google_oauth_state', state);
@@ -139,7 +139,7 @@ export const IntegrationTest: React.FC = () => {
       window.addEventListener('message', messageListener);
       
     } catch (error) {
-      addLog(`❌ Failed to start OAuth flow: ${error.message}`);
+      addLog(`❌ Failed to start OAuth flow: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 

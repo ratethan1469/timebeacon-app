@@ -4,7 +4,7 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const crypto = require('crypto');
-require('dotenv').config();
+require('dotenv').config({ path: './.env' });
 
 const app = express();
 
@@ -14,7 +14,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Allow inline scripts for OAuth callback
       imgSrc: ["'self'", "data:", "https:"],
     },
   },
@@ -46,24 +46,18 @@ app.use('/auth', authLimiter);
 // CORS with strict origin checking
 const allowedOrigins = [
   'http://localhost:3000',
+  'http://localhost:8080', // For testing
   'https://app.timebeacon.io',
   'https://timebeacon.io',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, etc.)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    callback(new Error('Not allowed by CORS'));
-  },
+  origin: true,
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 app.use(express.json({ limit: '10mb' }));
@@ -76,31 +70,15 @@ app.use(express.static('public', {
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/auth/google/callback'
+  'http://localhost:3003/auth/google/callback'
 );
 
-// Comprehensive scopes for all Google services
+// Full scopes for TimeBeacon functionality
 const SCOPES = [
-  // Gmail
   'https://www.googleapis.com/auth/gmail.readonly',
-  'https://www.googleapis.com/auth/gmail.metadata',
-  
-  // Google Calendar
   'https://www.googleapis.com/auth/calendar.readonly',
-  'https://www.googleapis.com/auth/calendar.events.readonly',
-  
-  // Google Drive (for Docs, Sheets, Slides)
   'https://www.googleapis.com/auth/drive.readonly',
-  'https://www.googleapis.com/auth/drive.metadata.readonly',
-  
-  // Google Docs
-  'https://www.googleapis.com/auth/documents.readonly',
-  
-  // Google Sheets  
-  'https://www.googleapis.com/auth/spreadsheets.readonly',
-  
-  // Google Slides
-  'https://www.googleapis.com/auth/presentations.readonly'
+  'https://www.googleapis.com/auth/documents.readonly'
 ];
 
 // Security utilities
@@ -191,11 +169,12 @@ function secureEndpoint(req, res, next) {
 // Generate OAuth URL
 app.get('/auth/google/url', (req, res) => {
   try {
+    const state = crypto.randomBytes(32).toString('hex'); // CSRF protection
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: SCOPES,
       prompt: 'consent',
-      state: crypto.randomBytes(32).toString('hex') // CSRF protection
+      state: state
     });
     
     auditLog('AUTH_URL_REQUESTED', null, {
@@ -204,7 +183,11 @@ app.get('/auth/google/url', (req, res) => {
       success: true
     });
     
-    res.json({ authUrl });
+    res.json({ 
+      success: true,
+      authUrl: authUrl,
+      state: state
+    });
   } catch (error) {
     auditLog('AUTH_URL_ERROR', null, {
       ip: req.ip,
@@ -218,8 +201,64 @@ app.get('/auth/google/url', (req, res) => {
 
 // Handle OAuth callback
 app.get('/auth/google/callback', async (req, res) => {
-  // Serve the callback HTML page
-  res.sendFile(__dirname + '/public/oauth-callback.html');
+  const { code, error } = req.query;
+  
+  if (error) {
+    return res.send(`
+      <html><body>
+        <h1>❌ Authentication Failed</h1>
+        <p>Error: ${error}</p>
+        <script>setTimeout(() => window.close(), 3000);</script>
+      </body></html>
+    `);
+  }
+  
+  if (!code) {
+    return res.send(`
+      <html><body>
+        <h1>❌ No authorization code received</h1>
+        <script>setTimeout(() => window.close(), 3000);</script>
+      </body></html>
+    `);
+  }
+  
+  try {
+    // Exchange code for tokens
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+    
+    // Store tokens securely (in a real app, you'd store this in a database)
+    global.googleTokens = tokens;
+    
+    res.send(`
+      <html>
+        <head><title>Success</title></head>
+        <body>
+          <h1>✅ Connected Successfully!</h1>
+          <p>Google services are now connected to TimeBeacon.</p>
+          <script>
+            if (window.opener) {
+              window.opener.postMessage({
+                type: 'oauth_success',
+                service: 'google'
+              }, 'http://localhost:3000');
+            }
+            setTimeout(() => window.close(), 2000);
+          </script>
+        </body>
+      </html>
+    `);
+    
+  } catch (error) {
+    console.error('Error exchanging code for tokens:', error);
+    res.send(`
+      <html><body>
+        <h1>❌ Authentication Error</h1>
+        <p>Failed to exchange authorization code: ${error.message}</p>
+        <script>setTimeout(() => window.close(), 5000);</script>
+      </body></html>
+    `);
+  }
 });
 
 // Exchange code for tokens (for frontend)
@@ -227,7 +266,7 @@ app.post('/auth/google/token', async (req, res) => {
   const { code } = req.body;
   
   try {
-    const { tokens } = await oauth2Client.getTokens(code);
+    const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
     
     res.json({
@@ -456,7 +495,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', service: 'Gmail Auth API' });
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = 3003;
 app.listen(PORT, () => {
   console.log(`Gmail Auth API running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);

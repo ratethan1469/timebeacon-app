@@ -3,6 +3,8 @@ import { TimeEntry, Project } from '../types';
 import { formatTimeRange } from '../utils/dateUtils';
 import { useCalendarEvents } from '../hooks/useCalendarEvents';
 import { CalendarEvent } from '../services/calendarIntegration';
+import { RealGoogleCalendar } from './RealGoogleCalendar';
+import GoogleAiSync from './GoogleAiSync';
 
 interface DashboardProps {
   entries: TimeEntry[];
@@ -98,6 +100,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     date: new Date().toISOString().split('T')[0],
     startTime: '09:00',
     duration: 1,
+    client: '',
     project: '',
     description: '',
     billable: true,
@@ -723,6 +726,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       )}
 
+      {/* Real Google Calendar Integration */}
+      <RealGoogleCalendar />
+
+      {/* Google AI Sync Section */}
+      <GoogleAiSync
+        accessToken={localStorage.getItem('google_access_token') || undefined}
+        onEntriesProcessed={(entries) => {
+          // Add processed entries to the current entries
+          entries.forEach(entry => {
+            if (onAddEntry) {
+              onAddEntry(entry);
+            }
+          });
+        }}
+      />
+
       <div className="week-summary">
         <div className="summary-card">
           <div className="summary-label">Total Hours This Week</div>
@@ -787,7 +806,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       <div className="weekly-grid">
-        {weekDates.map((date, index) => {
+        {weekDates.map((date) => {
           const dayEntries = getEntriesForDate(date);
           const dayCalendarEvents = getEventsForDate(date);
           const totalHours = getTotalHoursForDay(date);
@@ -818,7 +837,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             checkbox.indeterminate = selectedCount > 0 && selectedCount < dayEntries.length;
                           }
                         }}
-                        onChange={(e) => {
+                        onChange={(_e) => {
                           const newSelected = new Set(selectedEntries);
                           const allSelected = dayEntries.every(entry => selectedEntries.has(entry.id));
                           

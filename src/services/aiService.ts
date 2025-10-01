@@ -16,6 +16,23 @@ export interface AIAnalysisResult {
   reasoning?: string;
   tags?: string[];
   meetingType?: TimeEntry['meetingType'];
+  suggestions?: SuggestedTimeEntry[];
+}
+
+export interface SuggestedTimeEntry {
+  id: string;
+  date: string;
+  startTime: string;
+  duration: number;
+  client: string;
+  project: string;
+  description: string;
+  category: TimeEntry['category'];
+  source: 'ai_suggested';
+  isAutomatic: boolean;
+  meetingType?: TimeEntry['meetingType'];
+  tags: string[];
+  activity?: string;
 }
 
 export interface ContentAnalysisRequest {
@@ -44,7 +61,7 @@ export interface AIServiceConfig {
 class AIService {
   private config: AIServiceConfig = {
     ollamaBaseUrl: 'http://localhost:11434',
-    model: 'llama3.2:3b', // Efficient model for local processing
+    model: 'llama3.2:latest', // Use the model that's actually available
     maxTokens: 512,
     temperature: 0.1, // Low temperature for consistent business categorization
     confidenceThreshold: 0.7,
@@ -406,7 +423,7 @@ Only respond with valid JSON. If uncertain, lower the confidence score.`;
         timestamp: new Date().toISOString(),
         context: {
           projects: [{ id: '1', name: 'Internal Tools', client: 'Internal', color: '#000', active: true, createdAt: '' }],
-          clients: [{ id: '1', name: 'Internal', color: '#000', active: true, createdAt: '' }],
+          clients: [{ id: '1', name: 'Internal', color: '#000', active: true, createdAt: '', updatedAt: '' }],
           recentEntries: []
         }
       };

@@ -391,6 +391,7 @@ export interface Client {
   id: string;
   companyId: string; // Added for multi-tenant support
   name: string;
+  color?: string; // Added for compatibility with existing code
   email?: string;
   phone?: string;
   address?: Address;

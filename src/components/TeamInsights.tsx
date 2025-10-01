@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { TeamMember, TimeEntry } from '../types/auth';
 import { authService } from '../services/auth';
-import { multiTenantDB } from '../services/multiTenantDatabase';
 
 interface TeamStats {
   totalHours: number;
@@ -18,7 +17,7 @@ interface TeamInsightsProps {
 }
 
 export const TeamInsights: React.FC<TeamInsightsProps> = ({ isVisible }) => {
-  const { user, company, checkPermission } = useAuth();
+  const { company, checkPermission } = useAuth();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter'>('week');
   const [teamStats, setTeamStats] = useState<Record<string, TeamStats>>({});
@@ -321,7 +320,7 @@ export const TeamInsights: React.FC<TeamInsightsProps> = ({ isVisible }) => {
                         Top Projects This {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)}
                       </h4>
                       <div style={{ display: 'grid', gap: '8px' }}>
-                        {stats.topProjects.map((project, index) => (
+                        {stats.topProjects.map((project) => (
                           <div 
                             key={project.name}
                             style={{

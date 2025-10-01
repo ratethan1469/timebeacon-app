@@ -16,7 +16,7 @@ class SessionManager {
   private readonly SESSION_KEY = 'timebeacon_session';
   private readonly SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
   private readonly MAX_IDLE_TIME = 15 * 60 * 1000; // 15 minutes
-  private activityTimer: NodeJS.Timeout | null = null;
+  private activityTimer: number | null = null;
 
   /**
    * Store session data securely

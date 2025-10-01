@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test CORS Fix</title>
+</head>
+<body>
+    <h1>🧪 Test CORS Fix</h1>
+    <button onclick="testCORS()">Test Backend Connection</button>
+    <div id="result"></div>
+
+    <script>
+        async function testCORS() {
+            try {
+                console.log('Testing CORS from localhost:3000 to localhost:3003...');
+                
+                const response = await fetch('http://localhost:3003/auth/google/url', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('result').innerHTML = `
+                        <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                            <h3>✅ CORS Fixed Successfully!</h3>
+                            <p>Backend is accessible from frontend</p>
+                            <p>OAuth URL generated: ${data.success ? 'Yes' : 'No'}</p>
+                            <p style="font-size: 12px; color: #666;">
+                                Your integrations page should now work properly!
+                            </p>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <div style="background: #f8d7da; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        <h3>❌ CORS Still Blocked</h3>
+                        <p>Error: ${error.message}</p>
+                        <p>The backend may need a restart or different CORS configuration.</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -523,10 +523,9 @@ class AdvancedReportingService {
       .sort((a, b) => a.date.localeCompare(b.date));
   }
 
-  private getWeeklyComparison(entries: TimeEntry[], range: { start: Date; end: Date }): Array<{ week: string; currentYear: number; previousYear: number }> {
+  private getWeeklyComparison(_entries: TimeEntry[], range: { start: Date; end: Date }): Array<{ week: string; currentYear: number; previousYear: number }> {
     // Implementation for year-over-year weekly comparison
-    const currentYear = range.start.getFullYear();
-    const previousYear = currentYear - 1;
+    // Using range parameter to potentially implement year-over-year comparison
     
     // Mock data for demo
     return [
@@ -562,56 +561,11 @@ class AdvancedReportingService {
       .slice(0, 10);
   }
 
-  private generateSummarySheet(metrics: ReportMetrics): any[][] {
-    return [
-      ['Metric', 'Value'],
-      ['Total Hours', metrics.totalHours.toFixed(2)],
-      ['Billable Hours', metrics.billableHours.toFixed(2)],
-      ['Utilization Rate', `${metrics.utilizationRate.toFixed(1)}%`],
-      ['Productivity Score', `${metrics.productivityScore.toFixed(1)}%`],
-      ['Average Session Length', `${metrics.averageSessionLength.toFixed(1)} minutes`],
-      ['Total Sessions', metrics.totalSessions.toString()],
-    ];
-  }
 
-  private generateDetailedSheet(entries: TimeEntry[]): any[][] {
-    const headers = ['Date', 'Project', 'Client', 'Description', 'Duration (hours)', 'Billable', 'Rate', 'Earnings'];
-    const rows = entries.map(entry => [
-      entry.date,
-      entry.projectId,
-      entry.clientId || '',
-      entry.description,
-      ((entry.duration || 0) / 60).toFixed(2),
-      entry.billable ? 'Yes' : 'No',
-      entry.hourlyRate?.toFixed(2) || '',
-      ((entry.duration || 0) / 60 * (entry.hourlyRate || 0)).toFixed(2),
-    ]);
-    
-    return [headers, ...rows];
-  }
 
-  private generateChartsDataSheet(metrics: ReportMetrics): any[][] {
-    const headers = ['Chart Type', 'Data'];
-    return [
-      headers,
-      ['Top Projects', JSON.stringify(metrics.topProjects)],
-      ['Daily Trends', JSON.stringify(metrics.dailyTrends)],
-      ['Project Efficiency', JSON.stringify(metrics.projectEfficiency)],
-    ];
-  }
 
-  private generateTrendsSheet(metrics: ReportMetrics): any[][] {
-    const headers = ['Date', 'Hours', 'Sessions'];
-    const rows = metrics.dailyTrends.map(trend => [
-      trend.date,
-      trend.hours.toFixed(2),
-      trend.sessions.toString(),
-    ]);
-    
-    return [headers, ...rows];
-  }
 
-  private generatePDFContent(metrics: ReportMetrics, charts: AdvancedChartConfig[], options: ExportOptions): string {
+  private generatePDFContent(metrics: ReportMetrics, _charts: AdvancedChartConfig[], _options: ExportOptions): string {
     return `
       <!DOCTYPE html>
       <html>

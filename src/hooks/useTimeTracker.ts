@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TimeEntry, Project, Client, ActiveTimer, Settings, DashboardStats } from '../types';
-import { mockTimeEntries, mockProjects, mockClients, mockSettings } from '../mockData';
+import { mockTimeEntries, mockProjects, mockSettings } from '../mockData';
 
 const STORAGE_KEYS = {
   TIME_ENTRIES: 'timebeacon_entries_v6',
@@ -28,7 +28,7 @@ export const useTimeTracker = () => {
 
     const entries = savedEntries ? JSON.parse(savedEntries) : mockTimeEntries;
     const projects = savedProjects ? JSON.parse(savedProjects) : mockProjects;
-    const clients = savedClients ? JSON.parse(savedClients) : mockClients;
+    const clients = savedClients ? JSON.parse(savedClients) : [];
     
     // Handle settings with backward compatibility
     let settings = mockSettings;

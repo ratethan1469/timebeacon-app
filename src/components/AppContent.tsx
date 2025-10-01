@@ -18,7 +18,7 @@ export function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const [aiEnabled, setAiEnabled] = useState(false);
-  const [useEnhancedReports, setUseEnhancedReports] = useState(true);
+  const [useEnhancedReports] = useState(true);
   const timeTracker = useTimeTrackerSync();
 
   // Determine active item from URL

@@ -140,6 +140,7 @@ export interface SuggestedTimeEntry {
   suggestedClient: string;
   suggestedDescription: string;
   suggestedTags: string[];
+  activity?: string; // Added for compatibility with existing code
   
   // Privacy metadata
   basedOnDataFrom: string[];  // Which sources informed this suggestion

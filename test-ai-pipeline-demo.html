@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Pipeline Demo - No Google Auth Needed</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .demo { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .info { background: #d1ecf1; border-color: #bee5eb; }
+        .warning { background: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 12px 24px; margin: 10px 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        .mock-data { background: #f8f9fa; padding: 15px; border-radius: 4px; margin: 15px 0; }
+        .time-entry { background: white; border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin: 10px 0; }
+        .ai-badge { background: #6f42c1; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+        .confidence { font-weight: bold; }
+        .high { color: #28a745; }
+        .medium { color: #ffc107; }
+        .low { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <h1>🤖 TimeBeacon AI Pipeline Demo</h1>
+    <p>This demo shows how your Google data would be processed by AI without requiring actual Google authentication.</p>
+    
+    <div class="demo info">
+        <h3>📊 Mock Google Data</h3>
+        <p>Here's what your Google APIs would return:</p>
+        <div class="mock-data">
+            <strong>📧 Gmail:</strong> "Salesforce integration status meeting" from john@acmecorp.com<br>
+            <strong>📅 Calendar:</strong> "Team standup - Engineering sync" with 3 attendees<br>
+            <strong>📄 Drive:</strong> "Q4 Budget Spreadsheet.xlsx" last modified 2 hours ago
+        </div>
+        <button onclick="processWithAI()">🚀 Process with AI</button>
+    </div>
+    
+    <div class="demo" id="results" style="display:none;">
+        <h3>🎯 AI Processing Results</h3>
+        <div id="timeEntries"></div>
+    </div>
+    
+    <div class="demo success" id="dashboard" style="display:none;">
+        <h3>📈 Dashboard Integration</h3>
+        <p>These entries would automatically appear in your TimeBeacon dashboard:</p>
+        <div id="dashboardEntries"></div>
+        <button onclick="showActualIntegration()">📱 See in Actual App</button>
+    </div>
+
+    <script>
+        function processWithAI() {
+            // Mock Google data
+            const mockGoogleData = [
+                {
+                    id: 'email_1',
+                    type: 'gmail',
+                    title: 'Salesforce integration status meeting',
+                    timestamp: new Date().toISOString(),
+                    metadata: {
+                        sender: 'john@acmecorp.com',
+                        wordCount: 250
+                    }
+                },
+                {
+                    id: 'calendar_1',
+                    type: 'calendar', 
+                    title: 'Team standup - Engineering sync',
+                    timestamp: new Date().toISOString(),
+                    metadata: {
+                        participants: ['dev1@company.com', 'dev2@company.com', 'pm@company.com'],
+                        duration: 0.5
+                    }
+                },
+                {
+                    id: 'drive_1',
+                    type: 'drive_sheet',
+                    title: 'Q4 Budget Spreadsheet.xlsx',
+                    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+                    metadata: {
+                        lastModified: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+                    }
+                }
+            ];
+            
+            // Simulate AI processing
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('timeEntries').innerHTML = '<p>🔄 AI is analyzing the data...</p>';
+            
+            setTimeout(() => {
+                const processedEntries = mockGoogleData.map(item => processItemWithAI(item));
+                displayProcessedEntries(processedEntries);
+                
+                setTimeout(() => {
+                    document.getElementById('dashboard').style.display = 'block';
+                    displayDashboardEntries(processedEntries);
+                }, 1000);
+            }, 2000);
+        }
+        
+        function processItemWithAI(item) {
+            // Mock AI analysis based on the actual logic
+            let client, project, category, confidence, reasoning, billable = true;
+            
+            switch(item.type) {
+                case 'gmail':
+                    if (item.metadata.sender.includes('@acmecorp.com')) {
+                        client = 'Acme Corp';
+                        project = 'Salesforce Integration';
+                        category = 'client';
+                        confidence = 0.92;
+                        reasoning = 'Client email about specific project detected from domain and subject keywords';
+                    }
+                    break;
+                    
+                case 'calendar':
+                    if (item.title.toLowerCase().includes('standup') || item.title.toLowerCase().includes('team')) {
+                        client = 'Internal';
+                        project = 'Engineering Team';
+                        category = 'internal';
+                        confidence = 0.89;
+                        reasoning = 'Internal team meeting detected from title and internal attendees';
+                        billable = false;
+                    }
+                    break;
+                    
+                case 'drive_sheet':
+                    client = 'Internal';
+                    project = 'Finance & Budgeting';
+                    category = 'admin';
+                    confidence = 0.76;
+                    reasoning = 'Budget document suggests administrative finance work';
+                    billable = false;
+                    break;
+            }
+            
+            return {
+                id: `processed_${item.id}`,
+                originalType: item.type,
+                title: item.title,
+                client,
+                project,
+                category,
+                confidence,
+                reasoning,
+                billable,
+                duration: estimateDuration(item),
+                timestamp: item.timestamp,
+                autoApproved: confidence >= 0.8
+            };
+        }
+        
+        function estimateDuration(item) {
+            switch(item.type) {
+                case 'gmail':
+                    // Word count based estimation
+                    const wordCount = item.metadata.wordCount || 100;
+                    return Math.max(0.1, Math.round((wordCount / 200) * 4) / 4); // Quarter hour increments
+                    
+                case 'calendar':
+                    return item.metadata.duration || 0.5;
+                    
+                case 'drive_sheet':
+                    // Time since last modified (capped at 2 hours)
+                    const hoursAgo = (Date.now() - new Date(item.metadata.lastModified).getTime()) / (1000 * 60 * 60);
+                    return Math.min(Math.max(0.25, hoursAgo), 2);
+                    
+                default:
+                    return 0.5;
+            }
+        }
+        
+        function displayProcessedEntries(entries) {
+            const html = entries.map(entry => `
+                <div class="time-entry">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0;">${entry.title}</h4>
+                        <span class="ai-badge">AI Processed</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <strong>Client:</strong> ${entry.client}<br>
+                            <strong>Project:</strong> ${entry.project}<br>
+                            <strong>Category:</strong> ${entry.category}
+                        </div>
+                        <div>
+                            <strong>Duration:</strong> ${entry.duration}h<br>
+                            <strong>Billable:</strong> ${entry.billable ? 'Yes' : 'No'}<br>
+                            <strong>Confidence:</strong> <span class="confidence ${entry.confidence >= 0.8 ? 'high' : entry.confidence >= 0.6 ? 'medium' : 'low'}">${Math.round(entry.confidence * 100)}%</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 14px;">
+                        <strong>AI Reasoning:</strong> ${entry.reasoning}
+                    </div>
+                    <div style="margin-top: 10px;">
+                        ${entry.autoApproved 
+                            ? '<span style="color: #28a745;">✅ Auto-approved (high confidence)</span>'
+                            : '<span style="color: #ffc107;">⏳ Needs review (lower confidence)</span>'
+                        }
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('timeEntries').innerHTML = html;
+        }
+        
+        function displayDashboardEntries(entries) {
+            const autoApproved = entries.filter(e => e.autoApproved);
+            const needsReview = entries.filter(e => !e.autoApproved);
+            
+            const html = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h4 style="color: #28a745;">✅ Auto-Approved (${autoApproved.length})</h4>
+                        ${autoApproved.map(entry => `
+                            <div style="background: #d4edda; padding: 10px; border-radius: 4px; margin: 5px 0;">
+                                <strong>${entry.title}</strong><br>
+                                ${entry.client} • ${entry.project} • ${entry.duration}h
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div>
+                        <h4 style="color: #ffc107;">⏳ Needs Review (${needsReview.length})</h4>
+                        ${needsReview.map(entry => `
+                            <div style="background: #fff3cd; padding: 10px; border-radius: 4px; margin: 5px 0;">
+                                <strong>${entry.title}</strong><br>
+                                ${entry.client} • ${entry.project} • ${entry.duration}h<br>
+                                <small>Confidence: ${Math.round(entry.confidence * 100)}%</small>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div style="margin-top: 15px; padding: 15px; background: #d1ecf1; border-radius: 4px;">
+                    <strong>📊 Summary:</strong> ${entries.length} items processed, ${autoApproved.length} auto-approved, ${needsReview.length} need review
+                </div>
+            `;
+            
+            document.getElementById('dashboardEntries').innerHTML = html;
+        }
+        
+        function showActualIntegration() {
+            alert('🚀 This would open your TimeBeacon app at http://localhost:3000 where you can see the "Google AI Sync" component in your dashboard!');
+            window.open('http://localhost:3000', '_blank');
+        }
+    </script>
+</body>
+</html>

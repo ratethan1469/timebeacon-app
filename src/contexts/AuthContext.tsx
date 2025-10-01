@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/auth';
 import { sessionManager } from '../services/sessionManager';
 import { routingService } from '../services/routing';
-import { AuthState, LoginRequest, User, Company } from '../types/auth';
+import { AuthState } from '../types/auth';
 import apiService from '../services/apiService';
 
 interface AuthContextType extends AuthState {

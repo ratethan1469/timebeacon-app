@@ -173,13 +173,6 @@ export const SettingsSimplified: React.FC = () => {
     marginBottom: '20px'
   };
 
-  const checkboxLabelStyle = {
-    display: 'flex' as const,
-    alignItems: 'center',
-    gap: '8px',
-    marginBottom: '12px',
-    cursor: 'pointer' as const
-  };
 
   const saveButtonStyle = {
     backgroundColor: hasChanges ? '#3b82f6' : '#94a3b8',

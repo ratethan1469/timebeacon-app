@@ -21,6 +21,12 @@ export interface ValidationResult {
   sanitizedValue?: any;
 }
 
+export interface FormValidationResult {
+  isValid: boolean;
+  errors: Record<string, string[]>;
+  sanitizedData: Record<string, any>;
+}
+
 class InputValidator {
   /**
    * Validate a single field
@@ -78,11 +84,7 @@ class InputValidator {
   /**
    * Validate multiple fields
    */
-  validateForm(data: Record<string, any>, rules: Record<string, ValidationRule>): {
-    isValid: boolean;
-    errors: Record<string, string[]>;
-    sanitizedData: Record<string, any>;
-  } {
+  validateForm(data: Record<string, any>, rules: Record<string, ValidationRule>): FormValidationResult {
     const errors: Record<string, string[]> = {};
     const sanitizedData: Record<string, any> = {};
     let isValid = true;
@@ -226,7 +228,7 @@ class InputValidator {
   /**
    * Validate time entry data
    */
-  validateTimeEntry(data: any): ValidationResult {
+  validateTimeEntry(data: any): FormValidationResult {
     const rules = {
       description: {
         required: true,
@@ -255,7 +257,7 @@ class InputValidator {
   /**
    * Validate project data
    */
-  validateProject(data: any): ValidationResult {
+  validateProject(data: any): FormValidationResult {
     const rules = {
       name: {
         required: true,
@@ -288,7 +290,7 @@ class InputValidator {
   /**
    * Validate client data
    */
-  validateClient(data: any): ValidationResult {
+  validateClient(data: any): FormValidationResult {
     const rules = {
       name: {
         required: true,

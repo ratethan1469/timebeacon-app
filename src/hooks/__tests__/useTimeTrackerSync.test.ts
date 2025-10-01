@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useTimeTrackerSync } from '../useTimeTrackerSync';
 
-// Mock the database hook
+// Mock the database hook with proper return structure
 vi.mock('../useTimeTrackerDB', () => ({
-  useTimeTrackerDB: () => ({
+  useTimeTrackerDB: vi.fn(() => ({
     timeEntries: [],
     projects: [],
     clients: [],
@@ -44,7 +44,7 @@ vi.mock('../useTimeTrackerDB', () => ({
     toggleIntegration: vi.fn(),
     exportData: vi.fn().mockResolvedValue(undefined),
     clearAllData: vi.fn().mockResolvedValue(undefined)
-  })
+  }))
 }));
 
 describe('useTimeTrackerSync', () => {

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TimeBeacon OAuth Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .btn { padding: 12px 24px; background: #4285f4; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 10px; }
+        .btn:hover { background: #3367d6; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 TimeBeacon OAuth Test</h1>
+    <p>This page tests the Google OAuth setup for Gmail and Calendar integration.</p>
+    
+    <div>
+        <button class="btn" onclick="testBackendConnection()">1. Test Backend Connection</button>
+        <button class="btn" onclick="generateOAuthUrl()">2. Generate OAuth URL</button>
+        <button class="btn" onclick="startOAuthFlow()">3. Start OAuth Flow (Popup)</button>
+    </div>
+    
+    <div id="status"></div>
+    
+    <h3>Instructions:</h3>
+    <ol>
+        <li><strong>Test Backend Connection</strong> - Verify the Gmail auth server is running</li>
+        <li><strong>Generate OAuth URL</strong> - Check if OAuth URL generation works</li>
+        <li><strong>Start OAuth Flow</strong> - Open OAuth popup and complete authentication</li>
+    </ol>
+    
+    <h3>Expected Google Cloud Console Configuration:</h3>
+    <pre>
+Authorized redirect URIs:
+- http://localhost:3003/api/auth/google/callback
+- http://localhost:3001/auth/callback (for frontend callback handling)
+
+Required APIs:
+- Gmail API
+- Google Calendar API
+- Google Drive API
+    </pre>
+
+    <script>
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        async function testBackendConnection() {
+            showStatus('🔍 Testing backend connection...', 'info');
+            try {
+                const response = await fetch('http://localhost:3003/auth/google/url');
+                if (response.ok) {
+                    showStatus('✅ Backend connection successful! Gmail auth server is running on port 3003.', 'success');
+                } else {
+                    showStatus(`❌ Backend connection failed: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ Backend connection error: ${error.message}. Make sure the Gmail auth server is running on port 3003.`, 'error');
+            }
+        }
+
+        async function generateOAuthUrl() {
+            showStatus('🔐 Generating OAuth URL...', 'info');
+            try {
+                const response = await fetch('http://localhost:3003/auth/google/url');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('OAuth response:', data);
+                
+                if (data.success && data.authUrl && data.state) {
+                    showStatus(`✅ OAuth URL generated successfully!<br>
+                        <strong>State:</strong> ${data.state}<br>
+                        <strong>URL:</strong> <a href="${data.authUrl}" target="_blank">Click to test manually</a><br>
+                        <em>Note: The URL points to the correct redirect URI (port 3003)</em>`, 'success');
+                } else {
+                    showStatus('❌ Invalid OAuth response format', 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ OAuth URL generation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function startOAuthFlow() {
+            showStatus('🚀 Starting OAuth flow...', 'info');
+            try {
+                // Generate OAuth URL
+                const response = await fetch('http://localhost:3003/auth/google/url');
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error('Failed to generate OAuth URL');
+                }
+                
+                // Store state for verification
+                sessionStorage.setItem('oauth_state', data.state);
+                
+                // Open popup
+                const popup = window.open(
+                    data.authUrl,
+                    'google-oauth',
+                    'width=500,height=600,scrollbars=yes,resizable=yes'
+                );
+                
+                if (!popup) {
+                    throw new Error('Popup blocked. Please allow popups for this site.');
+                }
+                
+                showStatus('🔄 OAuth popup opened. Complete the authentication in the popup window...', 'info');
+                
+                // Listen for popup messages
+                window.addEventListener('message', function(event) {
+                    if (event.origin !== window.location.origin) return;
+                    
+                    if (event.data.type === 'OAUTH_SUCCESS') {
+                        popup.close();
+                        showStatus('🎉 OAuth Success! Authentication completed successfully.', 'success');
+                    } else if (event.data.type === 'OAUTH_ERROR') {
+                        popup.close();
+                        showStatus(`❌ OAuth Error: ${event.data.error}`, 'error');
+                    }
+                });
+                
+                // Check if popup was closed manually
+                const checkClosed = setInterval(() => {
+                    if (popup.closed) {
+                        clearInterval(checkClosed);
+                        showStatus('⚠️ OAuth popup was closed. Authentication may not have completed.', 'error');
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                showStatus(`❌ OAuth flow failed: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

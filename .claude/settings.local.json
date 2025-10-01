@@ -46,7 +46,16 @@
       "Bash(npm run preview:*)",
       "Bash(git pull:*)",
       "Bash(git rebase:*)",
-      "Bash(npm run deploy:*)"
+      "Bash(npm run deploy:*)",
+      "Bash(npm audit:*)",
+      "Bash(brew tap:*)",
+      "Bash(brew install:*)",
+      "Bash(/dev/null)",
+      "Bash(git restore:*)",
+      "Bash(npm test)",
+      "Bash(npm run:*)",
+      "Bash(open /Users/miriamritter/Desktop/timebeacon-app/test-oauth-flow.html)",
+      "Bash(open http://localhost:8080/simple-test.html)"
     ],
     "deny": []
   }

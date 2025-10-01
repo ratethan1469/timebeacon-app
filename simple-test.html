@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple TimeBeacon Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .test { margin: 15px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; }
+        .error { background: #f8d7da; }
+        .info { background: #d1ecf1; }
+        button { padding: 10px 20px; margin: 10px 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Simple TimeBeacon Test</h1>
+    
+    <div class="test info">
+        <h3>Auto-detecting your backend...</h3>
+        <button onclick="findBackend()">Find Backend Port</button>
+        <div id="backendResult"></div>
+    </div>
+    
+    <div class="test">
+        <h3>Test OAuth URL Generation</h3>
+        <button onclick="testOAuth()" disabled id="oauthBtn">Test OAuth</button>
+        <div id="oauthResult"></div>
+    </div>
+    
+    <div class="test">
+        <h3>Test Google APIs (needs auth)</h3>
+        <input type="text" id="token" placeholder="Paste access token here" style="width: 100%; padding: 8px; margin: 10px 0;">
+        <button onclick="testAPIs()" disabled id="apiBtn">Test APIs</button>
+        <div id="apiResult"></div>
+    </div>
+
+    <script>
+        let backendPort = null;
+        
+        async function findBackend() {
+            const ports = [3003, 3001, 3000, 8000];
+            
+            document.getElementById('backendResult').innerHTML = '<p>🔍 Checking ports...</p>';
+            
+            for (const port of ports) {
+                try {
+                    const response = await fetch(`http://localhost:${port}/health`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        backendPort = port;
+                        
+                        document.getElementById('backendResult').innerHTML = `
+                            <div class="success">
+                                <p>✅ Found backend on port ${port}</p>
+                                <pre>${JSON.stringify(data, null, 2)}</pre>
+                            </div>
+                        `;
+                        
+                        document.getElementById('oauthBtn').disabled = false;
+                        document.getElementById('apiBtn').disabled = false;
+                        return;
+                    }
+                } catch (error) {
+                    // Port not available
+                }
+            }
+            
+            document.getElementById('backendResult').innerHTML = `
+                <div class="error">
+                    <p>❌ Backend not found on any port</p>
+                    <p>Make sure your backend server is running</p>
+                </div>
+            `;
+        }
+        
+        async function testOAuth() {
+            if (!backendPort) {
+                alert('Find backend first');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:${backendPort}/auth/google/url`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('oauthResult').innerHTML = `
+                        <div class="success">
+                            <p>✅ OAuth URL generated!</p>
+                            <p><a href="${data.authUrl}" target="_blank">🔗 Click to authenticate</a></p>
+                            <p style="font-size: 12px;">After auth, you'll get a code in the URL. Copy everything after 'code=' and before '&'</p>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('oauthResult').innerHTML = `
+                        <div class="error">
+                            <p>❌ OAuth failed</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('oauthResult').innerHTML = `
+                    <div class="error">
+                        <p>❌ Error: ${error.message}</p>
+                        <p>Check CORS settings in your backend</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testAPIs() {
+            const token = document.getElementById('token').value.trim();
+            if (!token) {
+                alert('Please paste an access token first');
+                return;
+            }
+            
+            if (!backendPort) {
+                alert('Find backend first');
+                return;
+            }
+            
+            document.getElementById('apiResult').innerHTML = '<p>🔍 Testing APIs...</p>';
+            
+            const tests = [
+                { name: 'Gmail', url: `/gmail/messages?access_token=${token}` },
+                { name: 'Calendar', url: `/calendar/events?access_token=${token}` },
+                { name: 'Drive', url: `/drive/files?access_token=${token}&type=docs` }
+            ];
+            
+            let results = '';
+            
+            for (const test of tests) {
+                try {
+                    const response = await fetch(`http://localhost:${backendPort}${test.url}`);
+                    const data = await response.json();
+                    
+                    if (response.ok && (data.messages || data.events || data.files)) {
+                        results += `<div class="success">
+                            <h4>✅ ${test.name} API Working</h4>
+                            <p>Found ${(data.messages || data.events || data.files || []).length} items</p>
+                        </div>`;
+                    } else if (response.status === 401) {
+                        results += `<div class="error">
+                            <h4>⚠️ ${test.name} API: Invalid Token</h4>
+                            <p>The access token may be expired or invalid</p>
+                        </div>`;
+                    } else {
+                        results += `<div class="error">
+                            <h4>❌ ${test.name} API Error</h4>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>`;
+                    }
+                } catch (error) {
+                    results += `<div class="error">
+                        <h4>❌ ${test.name} API Failed</h4>
+                        <p>${error.message}</p>
+                    </div>`;
+                }
+            }
+            
+            document.getElementById('apiResult').innerHTML = results;
+        }
+        
+        // Auto-run backend detection on load
+        window.onload = () => {
+            findBackend();
+        };
+    </script>
+</body>
+</html>

@@ -396,7 +396,7 @@ class ExcelExporter {
   }
 
   // Helper methods
-  private getStatusIndicator(value: number, target: number, type: string): string {
+  private getStatusIndicator(value: number, target: number, _type: string): string {
     const ratio = value / target;
     if (ratio >= 1) return '🟢 Excellent';
     if (ratio >= 0.8) return '🟡 Good';

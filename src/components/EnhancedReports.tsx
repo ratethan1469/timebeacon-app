@@ -21,7 +21,7 @@ import { Bar, Line, Doughnut, Radar } from 'react-chartjs-2';
 import { useAuth } from '../contexts/AuthContext';
 import { useTimeTrackerDB } from '../hooks/useTimeTrackerDB';
 import { advancedReportingService } from '../services/advancedReporting';
-import type { TimeEntry, Project, Client, User } from '../types';
+import type { User } from '../types/auth';
 
 // Register Chart.js components
 ChartJS.register(
@@ -135,14 +135,14 @@ const EnhancedReports: React.FC = () => {
     // Project filter
     if (filters.selectedProjects.length > 0) {
       filteredEntries = filteredEntries.filter(entry => 
-        filters.selectedProjects.includes(entry.projectId)
+        filters.selectedProjects.includes(entry.project)
       );
     }
 
     // Client filter
     if (filters.selectedClients.length > 0) {
       filteredEntries = filteredEntries.filter(entry => 
-        entry.clientId && filters.selectedClients.includes(entry.clientId)
+        entry.client && filters.selectedClients.includes(entry.client)
       );
     }
 
@@ -510,7 +510,7 @@ const EnhancedReports: React.FC = () => {
               {filteredData.slice(0, 50).map((entry, index) => (
                 <tr key={index}>
                   <td>{new Date(entry.date).toLocaleDateString()}</td>
-                  <td>{projects.find(p => p.id === entry.projectId)?.name || 'Unknown'}</td>
+                  <td>{projects.find(p => p.name === entry.project)?.name || 'Unknown'}</td>
                   <td>{entry.description}</td>
                   <td>{((entry.duration || 0) / 60).toFixed(1)}h</td>
                   <td>
@@ -539,7 +539,7 @@ const EnhancedReports: React.FC = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .enhanced-reports {
           padding: 20px;
           max-width: 1400px;

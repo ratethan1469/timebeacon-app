@@ -5,15 +5,12 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { authService } from '../services/auth';
 import { 
   User, 
   UserRole, 
   Permission, 
   ROLE_PERMISSIONS, 
-  ROLE_HIERARCHY,
-  PermissionResource,
-  PermissionAction 
+  ROLE_HIERARCHY
 } from '../types/auth';
 
 interface TeamAssignment {
@@ -208,62 +205,7 @@ const PermissionsManager: React.FC = () => {
     }
   };
 
-  const assignTeamMember = async (userId: string, managerId: string, department: string) => {
-    if (!canManageTeams) return;
 
-    try {
-      const newAssignment: TeamAssignment = {
-        userId,
-        managerId,
-        department,
-        startDate: new Date().toISOString(),
-      };
-
-      setTeamAssignments(prev => [
-        ...prev.filter(a => a.userId !== userId),
-        newAssignment
-      ]);
-
-      // Update user's manager
-      setUsers(prev => prev.map(u => 
-        u.id === userId 
-          ? { ...u, profile: { ...u.profile, manager: managerId, department } }
-          : u
-      ));
-
-      console.log(`✅ Assigned team member ${userId} to manager ${managerId}`);
-    } catch (error) {
-      console.error('Failed to assign team member:', error);
-    }
-  };
-
-  const grantCustomPermission = async (userId: string, permission: Permission, reason?: string) => {
-    if (!canManagePermissions) return;
-
-    try {
-      setUsers(prev => prev.map(u => 
-        u.id === userId 
-          ? { ...u, permissions: [...u.permissions, permission] }
-          : u
-      ));
-
-      // Add audit log
-      const auditEntry: PermissionAuditLog = {
-        id: Date.now().toString(),
-        userId,
-        action: 'granted',
-        permission: `${permission.resource}:${permission.actions.join(',')}`,
-        grantedBy: user?.id || '',
-        timestamp: new Date().toISOString(),
-        reason,
-      };
-      setAuditLogs(prev => [auditEntry, ...prev]);
-
-      console.log(`✅ Granted custom permission to user ${userId}`);
-    } catch (error) {
-      console.error('Failed to grant permission:', error);
-    }
-  };
 
   // Get effective permissions for a user
   const getEffectivePermissions = (targetUser: User): Permission[] => {
@@ -271,11 +213,6 @@ const PermissionsManager: React.FC = () => {
     return [...rolePermissions, ...targetUser.permissions];
   };
 
-  // Check if user can access a specific resource
-  const canUserAccess = (targetUser: User, resource: PermissionResource, action: PermissionAction): boolean => {
-    const permissions = getEffectivePermissions(targetUser);
-    return authService.hasPermission(permissions, resource, action, targetUser.id);
-  };
 
   // Get users that current user can manage
   const managedUsers = useMemo(() => {
@@ -593,7 +530,7 @@ const PermissionsManager: React.FC = () => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .permissions-manager {
           padding: 20px;
           max-width: 1400px;

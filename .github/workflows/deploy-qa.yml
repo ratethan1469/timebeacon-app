@@ -1,0 +1,52 @@
+name: Deploy to QA
+
+on:
+  push:
+    branches: [ qa ]
+  workflow_dispatch:
+
+jobs:
+  deploy-qa:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-js-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: npm run test
+
+    - name: Run type check
+      run: npm run type-check
+
+    - name: Build for QA
+      run: npm run build:qa
+      env:
+        VITE_API_URL: https://api.qa.timebeacon.io
+        VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        VITE_GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        VITE_GOOGLE_REDIRECT_URI: https://app.qa.timebeacon.io/api/auth/google/callback
+
+    - name: Deploy to QA (Vercel)
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod --build-env VITE_APP_ENV=qa'
+        alias-domains: app.qa.timebeacon.io
+
+    - name: Notify QA deployment
+      run: |
+        echo "🚀 QA deployment completed!"
+        echo "📱 QA App: https://app.qa.timebeacon.io"
+        echo "🔍 Test all features before promoting to production"

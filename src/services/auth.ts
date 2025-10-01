@@ -17,7 +17,7 @@ import {
 } from '../types/auth';
 
 class AuthService {
-  private readonly API_BASE = import.meta.env.VITE_API_URL || 'https://api.timebeacon.io';
+  private readonly API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3003/api';
   private readonly TOKEN_KEY = 'timebeacon_access_token';
   private readonly REFRESH_KEY = 'timebeacon_refresh_token';
   private readonly USER_KEY = 'timebeacon_user';
@@ -51,17 +51,7 @@ class AuthService {
       console.warn('Rate limit reached for demo account, but allowing attempt');
     }
 
-    // For demo with enhanced security - always use secure login for demo
-    // In a real production app, check for actual backend availability
-    try {
-      return await this.secureLogin(request);
-    } catch (error) {
-      // Fallback to production login if demo fails
-      console.warn('Demo login failed, trying production:', error);
-      return this.productionLogin(request);
-    }
-    
-    /* Uncomment when real backend is ready:
+    // Use real MongoDB API backend
     try {
       const response = await fetch(`${this.API_BASE}/auth/login`, {
         method: 'POST',
@@ -95,7 +85,6 @@ class AuthService {
       
       throw error;
     }
-    */
   }
 
   /**

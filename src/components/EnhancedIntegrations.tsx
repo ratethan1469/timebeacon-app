@@ -6,7 +6,6 @@
 import { useState, useEffect } from 'react';
 import { Integration } from '../types';
 import GoogleIntegrations from './GoogleIntegrations';
-import { activitySyncService } from '../services/activitySync';
 
 interface IntegrationMetrics {
   totalSynced: number;
@@ -238,7 +237,7 @@ export default function EnhancedIntegrations() {
       'coming-soon': 'bg-yellow-100 text-yellow-800',
       premium: 'bg-purple-100 text-purple-800'
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
   const renderConnectedTab = () => (

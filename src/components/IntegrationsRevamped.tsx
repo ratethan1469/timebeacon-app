@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { googleIntegrationService, ApiTestResult } from '../services/googleIntegrationService';
-import { intelligentDataImportService, ImportResult } from '../services/intelligentDataImport';
+import { intelligentDataImportService } from '../services/intelligentDataImport';
 import { useTimeTracker } from '../hooks/useTimeTracker';
 
 interface Integration {
   id: string;
   name: string;
   description: string;
-  icon: JSX.Element;
+  icon: React.ReactElement;
   status: 'connected' | 'available' | 'coming-soon';
   category: 'google' | 'communication' | 'productivity';
 }
@@ -85,8 +85,8 @@ export const IntegrationsRevamped: React.FC = () => {
   const [connectedIntegrations, setConnectedIntegrations] = useState<Set<string>>(new Set());
   const [isConnecting, setIsConnecting] = useState<Set<string>>(new Set());
   const [testResults, setTestResults] = useState<{ [key: string]: ApiTestResult }>({});
-  const [authStatus, setAuthStatus] = useState(googleIntegrationService.getAuthStatus());
   const [isImporting, setIsImporting] = useState(false);
+  const [, setAuthStatus] = useState({ isAuthenticated: false });
   
   // Get access to the time tracker hook
   const { addTimeEntry } = useTimeTracker();
@@ -198,7 +198,7 @@ export const IntegrationsRevamped: React.FC = () => {
 
     } catch (error) {
       console.error(`Failed to connect ${integrationId}:`, error);
-      alert(`Failed to connect: ${error.message}`);
+      alert(`Failed to connect: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsConnecting(prev => {
         const newSet = new Set(prev);
@@ -208,7 +208,7 @@ export const IntegrationsRevamped: React.FC = () => {
     }
   };
 
-  const handleDisconnect = (integrationId: string) => {
+  const handleDisconnect = (_integrationId: string) => {
     // Clear all stored tokens and data
     googleIntegrationService.clearTokens();
     localStorage.removeItem('google_oauth_tokens');
@@ -333,7 +333,7 @@ export const IntegrationsRevamped: React.FC = () => {
       
     } catch (error) {
       console.error('❌ Error during automatic data import:', error);
-      alert(`❌ Import failed: ${error.message}`);
+      alert(`❌ Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsImporting(false);
     }

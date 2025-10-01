@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TimeBeacon Google OAuth Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .step { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .warning { background: #fff3cd; border-color: #ffeaa7; }
+        .info { background: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 10px 5px; cursor: pointer; }
+        input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; }
+        #results { margin-top: 20px; }
+        .token-display { background: #f8f9fa; padding: 10px; border-radius: 4px; word-break: break-all; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>🚀 TimeBeacon Google AI Integration Test</h1>
+    
+    <div class="step info">
+        <h3>Step 1: Generate OAuth URL</h3>
+        <button onclick="generateAuthUrl()">Generate Google Auth URL</button>
+        <div id="authUrlResult"></div>
+    </div>
+    
+    <div class="step warning">
+        <h3>Step 2: Authenticate with Google</h3>
+        <p>After clicking the auth URL above, you'll be redirected back with a code. Paste it here:</p>
+        <input type="text" id="authCode" placeholder="Paste the 'code' parameter from the redirect URL here">
+        <button onclick="exchangeCodeForToken()">Get Access Token</button>
+        <div id="tokenResult"></div>
+    </div>
+    
+    <div class="step success">
+        <h3>Step 3: Test Google APIs</h3>
+        <button onclick="testGmailAPI()">Test Gmail API</button>
+        <button onclick="testCalendarAPI()">Test Calendar API</button>
+        <button onclick="testDriveAPI()">Test Drive API</button>
+        <div id="apiResults"></div>
+    </div>
+    
+    <div class="step info">
+        <h3>Step 4: Test AI Processing</h3>
+        <button onclick="testAIProcessing()">Test AI Processing Pipeline</button>
+        <div id="aiResults"></div>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        let accessToken = '';
+        
+        async function generateAuthUrl() {
+            try {
+                const response = await fetch('http://localhost:3003/auth/google/url');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('authUrlResult').innerHTML = `
+                        <p>✅ Auth URL generated successfully!</p>
+                        <p><a href="${data.authUrl}" target="_blank" style="color: #007bff; text-decoration: none;">
+                            🔗 Click here to authenticate with Google
+                        </a></p>
+                        <p style="font-size: 12px; color: #666;">
+                            After authenticating, copy the 'code' parameter from the redirect URL and paste it in Step 2.
+                        </p>
+                    `;
+                } else {
+                    document.getElementById('authUrlResult').innerHTML = `<p>❌ Failed: ${JSON.stringify(data)}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('authUrlResult').innerHTML = `<p>❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function exchangeCodeForToken() {
+            const code = document.getElementById('authCode').value.trim();
+            if (!code) {
+                alert('Please paste the authorization code');
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:3003/auth/google/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.tokens) {
+                    accessToken = data.tokens.access_token;
+                    document.getElementById('tokenResult').innerHTML = `
+                        <p>✅ Access token received!</p>
+                        <div class="token-display">
+                            <strong>Access Token:</strong> ${accessToken.substring(0, 50)}...
+                        </div>
+                        <p style="color: green;">You can now test the Google APIs below!</p>
+                    `;
+                } else {
+                    document.getElementById('tokenResult').innerHTML = `<p>❌ Failed: ${JSON.stringify(data)}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('tokenResult').innerHTML = `<p>❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testGmailAPI() {
+            if (!accessToken) {
+                alert('Please get an access token first (Step 2)');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:3003/gmail/messages?access_token=${accessToken}`);
+                const data = await response.json();
+                
+                document.getElementById('apiResults').innerHTML += `
+                    <h4>📧 Gmail API Result:</h4>
+                    <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; overflow: auto;">
+${JSON.stringify(data, null, 2)}
+                    </pre>
+                `;
+            } catch (error) {
+                document.getElementById('apiResults').innerHTML += `<p>❌ Gmail API Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testCalendarAPI() {
+            if (!accessToken) {
+                alert('Please get an access token first (Step 2)');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:3003/calendar/events?access_token=${accessToken}`);
+                const data = await response.json();
+                
+                document.getElementById('apiResults').innerHTML += `
+                    <h4>📅 Calendar API Result:</h4>
+                    <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; overflow: auto;">
+${JSON.stringify(data, null, 2)}
+                    </pre>
+                `;
+            } catch (error) {
+                document.getElementById('apiResults').innerHTML += `<p>❌ Calendar API Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testDriveAPI() {
+            if (!accessToken) {
+                alert('Please get an access token first (Step 2)');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:3003/drive/files?access_token=${accessToken}&type=docs`);
+                const data = await response.json();
+                
+                document.getElementById('apiResults').innerHTML += `
+                    <h4>📄 Drive API Result:</h4>
+                    <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; overflow: auto;">
+${JSON.stringify(data, null, 2)}
+                    </pre>
+                `;
+            } catch (error) {
+                document.getElementById('apiResults').innerHTML += `<p>❌ Drive API Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testAIProcessing() {
+            // Simulate the AI processing with mock Google data
+            const mockGoogleData = [
+                {
+                    id: 'test_email_1',
+                    type: 'gmail',
+                    title: 'Salesforce integration meeting recap',
+                    timestamp: new Date().toISOString(),
+                    metadata: {
+                        sender: 'john@acmecorp.com',
+                        wordCount: 150
+                    },
+                    source: 'google_api'
+                },
+                {
+                    id: 'test_calendar_1', 
+                    type: 'calendar',
+                    title: 'Team standup - Daily sync',
+                    timestamp: new Date().toISOString(),
+                    metadata: {
+                        participants: ['team@timebeacon.io', 'dev@timebeacon.io'],
+                        duration: 0.5
+                    },
+                    source: 'google_api'
+                }
+            ];
+            
+            document.getElementById('aiResults').innerHTML = `
+                <h4>🤖 AI Processing Simulation:</h4>
+                <p>Processing ${mockGoogleData.length} Google data items...</p>
+                
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <h5>📧 Email Processing:</h5>
+                    <p><strong>Input:</strong> "${mockGoogleData[0].title}" from ${mockGoogleData[0].metadata.sender}</p>
+                    <p><strong>AI Analysis:</strong></p>
+                    <ul>
+                        <li>Client: "Acme Corp" (detected from email domain)</li>
+                        <li>Project: "Salesforce Integration" (detected from subject)</li>
+                        <li>Category: "client" (client email = billable work)</li>
+                        <li>Duration: 0.25 hours (estimated from word count)</li>
+                        <li>Confidence: 85% (high confidence = auto-approved)</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <h5>📅 Calendar Processing:</h5>
+                    <p><strong>Input:</strong> "${mockGoogleData[1].title}" with ${mockGoogleData[1].metadata.participants.length} participants</p>
+                    <p><strong>AI Analysis:</strong></p>
+                    <ul>
+                        <li>Client: "Internal" (team meeting = internal work)</li>
+                        <li>Project: "Internal Project" (standup = internal)</li>
+                        <li>Category: "internal" (non-billable)</li>
+                        <li>Duration: 0.5 hours (from calendar data)</li>
+                        <li>Confidence: 90% (clear internal meeting pattern)</li>
+                    </ul>
+                </div>
+                
+                <p style="color: green; font-weight: bold;">✅ AI processing simulation complete! 
+                In the real app, these would become time entries in your dashboard.</p>
+                
+                <div style="background: #d1ecf1; padding: 10px; border-radius: 4px; margin-top: 15px;">
+                    <strong>Next Step:</strong> Open your TimeBeacon app at <a href="http://localhost:3000" target="_blank">http://localhost:3000</a> 
+                    and look for the "Google AI Sync" section in your dashboard. Use the access token above to test the real integration!
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

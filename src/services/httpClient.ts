@@ -214,7 +214,7 @@ class HttpClient {
       if (response.ok) {
         const data = await response.json();
         this.csrfToken = data.token;
-        localStorage.setItem('csrf_token', this.csrfToken);
+        localStorage.setItem('csrf_token', this.csrfToken || '');
       }
     } catch (error) {
       console.warn('Failed to initialize CSRF token:', error);

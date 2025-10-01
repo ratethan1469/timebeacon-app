@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Exact OAuth Configuration</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .config { background: #f8f9fa; padding: 15px; border-radius: 4px; margin: 10px 0; }
+        .error { background: #f8d7da; padding: 15px; border-radius: 4px; margin: 10px 0; }
+        .success { background: #d4edda; padding: 15px; border-radius: 4px; margin: 10px 0; }
+        button { padding: 12px 24px; margin: 10px 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 OAuth Configuration Checker</h1>
+    
+    <button onclick="checkConfig()">Check Current OAuth Configuration</button>
+    
+    <div id="results"></div>
+
+    <script>
+        async function checkConfig() {
+            try {
+                const response = await fetch('http://localhost:3003/auth/google/url');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Parse the auth URL to extract parameters
+                    const url = new URL(data.authUrl);
+                    const clientId = url.searchParams.get('client_id');
+                    const redirectUri = url.searchParams.get('redirect_uri');
+                    const scopes = url.searchParams.get('scope');
+                    
+                    document.getElementById('results').innerHTML = `
+                        <div class="success">
+                            <h3>✅ Backend OAuth Configuration</h3>
+                        </div>
+                        
+                        <div class="config">
+                            <h4>Current Configuration:</h4>
+                            <p><strong>Client ID:</strong><br><code>${clientId}</code></p>
+                            <p><strong>Redirect URI:</strong><br><code>${decodeURIComponent(redirectUri)}</code></p>
+                            <p><strong>Scopes:</strong><br><code>${decodeURIComponent(scopes).split(' ').join('<br>')}</code></p>
+                        </div>
+                        
+                        <div class="error">
+                            <h4>🔧 Verify in Google Cloud Console:</h4>
+                            <ol>
+                                <li><strong>Go to:</strong> <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Credentials</a></li>
+                                <li><strong>Find OAuth client:</strong> ${clientId}</li>
+                                <li><strong>Check "Authorized redirect URIs" exactly matches:</strong><br><code>${decodeURIComponent(redirectUri)}</code></li>
+                                <li><strong>Ensure OAuth consent screen is published or you're added as test user</strong></li>
+                                <li><strong>Wait 10-15 minutes after any changes</strong></li>
+                            </ol>
+                        </div>
+                        
+                        <div class="config">
+                            <h4>💡 Alternative Solution:</h4>
+                            <p>If the above doesn't work, the issue might be:</p>
+                            <ul>
+                                <li><strong>Client Secret mismatch:</strong> Re-generate client secret in Google Console</li>
+                                <li><strong>Project issues:</strong> The OAuth client might be in a different project than the enabled APIs</li>
+                                <li><strong>Quota limits:</strong> Check if you've hit any API quotas</li>
+                                <li><strong>Browser cache:</strong> Try incognito mode for OAuth flow</li>
+                            </ul>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('results').innerHTML = `
+                        <div class="error">
+                            <h3>❌ Backend Error</h3>
+                            <p>${JSON.stringify(data)}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('results').innerHTML = `
+                    <div class="error">
+                        <h3>❌ Connection Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
