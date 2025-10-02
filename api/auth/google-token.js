@@ -65,9 +65,10 @@ export default async function handler(req, res) {
 
     if (!tokenResponse.ok) {
       console.error('Google token exchange failed:', tokens);
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Token exchange failed',
-        error: tokens.error_description || tokens.error
+        error: tokens.error_description || tokens.error,
+        details: tokens
       });
     }
 
