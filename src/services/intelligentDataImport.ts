@@ -36,27 +36,21 @@ export interface CalendarEventData {
 }
 
 export class IntelligentDataImportService {
-  private backendUrl = 'http://localhost:3001';
-  
+
   async importGmailData(tokens: any): Promise<ImportResult> {
     try {
       console.log('📧 Starting Gmail data import...');
-      
+
       // Get this week's date range
       const { startDate, endDate } = this.getWeekDateRange();
-      
-      // Fetch Gmail messages from backend
-      const emailResponse = await fetch(`${this.backendUrl}/api/google/gmail/messages`, {
-        method: 'POST',
+
+      // Fetch Gmail messages directly from Google API
+      const emailResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q=after:${Math.floor(new Date(startDate).getTime() / 1000)}`, {
+        method: 'GET',
         headers: {
+          'Authorization': `Bearer ${tokens.access_token}`,
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          tokens: JSON.stringify(tokens),
-          startDate,
-          endDate,
-          maxResults: 50
-        })
+        }
       });
       
       if (!emailResponse.ok) {
@@ -111,18 +105,13 @@ export class IntelligentDataImportService {
       // Get this week's date range
       const { startDate, endDate } = this.getWeekDateRange();
       
-      // Fetch Calendar events from backend
-      const calendarResponse = await fetch(`${this.backendUrl}/api/google/calendar/events`, {
-        method: 'POST',
+      // Fetch Calendar events directly from Google API
+      const calendarResponse = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${new Date(startDate).toISOString()}&timeMax=${new Date(endDate).toISOString()}&singleEvents=true&orderBy=startTime&maxResults=50`, {
+        method: 'GET',
         headers: {
+          'Authorization': `Bearer ${tokens.access_token}`,
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          tokens: JSON.stringify(tokens),
-          timeMin: startDate,
-          timeMax: endDate,
-          maxResults: 50
-        })
+        }
       });
       
       if (!calendarResponse.ok) {
@@ -130,7 +119,7 @@ export class IntelligentDataImportService {
       }
       
       const calendarData = await calendarResponse.json();
-      const events: CalendarEventData[] = calendarData.events || [];
+      const events: CalendarEventData[] = calendarData.items || [];
       
       // Filter to only meetings (not all-day events)
       const meetings = events.filter(event => 
