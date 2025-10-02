@@ -58,14 +58,49 @@ export class IntelligentDataImportService {
       }
       
       const emailData = await emailResponse.json();
-      const emails: EmailData[] = emailData.messages || [];
-      
-      console.log(`📧 Found ${emails.length} emails to process`);
-      
+      const messageIds = emailData.messages || [];
+
+      console.log(`📧 Found ${messageIds.length} email IDs, fetching details...`);
+
+      // Fetch full details for each message
+      const emails: EmailData[] = [];
+      for (const msg of messageIds.slice(0, 10)) { // Limit to 10 emails to avoid rate limits
+        try {
+          const msgResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=full`, {
+            headers: {
+              'Authorization': `Bearer ${tokens.access_token}`,
+            }
+          });
+
+          if (msgResponse.ok) {
+            const fullMessage = await msgResponse.json();
+            const headers = fullMessage.payload?.headers || [];
+            const subject = headers.find((h: any) => h.name === 'Subject')?.value || 'No Subject';
+            const from = headers.find((h: any) => h.name === 'From')?.value || '';
+            const date = headers.find((h: any) => h.name === 'Date')?.value || new Date().toISOString();
+
+            emails.push({
+              id: fullMessage.id,
+              subject: subject,
+              sender: from,
+              recipients: [],
+              timestamp: date,
+              wordCount: 0,
+              snippet: fullMessage.snippet || '',
+              threadLength: 1
+            });
+          }
+        } catch (error) {
+          console.error(`Failed to fetch message ${msg.id}:`, error);
+        }
+      }
+
+      console.log(`📧 Successfully fetched ${emails.length} full emails`);
+
       // Process each email and create time entries
       const timeEntries = [];
       const errors = [];
-      
+
       for (const email of emails) {
         try {
           const timeEntry = await this.processEmailToTimeEntry(email);
