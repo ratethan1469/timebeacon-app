@@ -81,15 +81,16 @@ const integrations: Integration[] = [
   }
 ];
 
-export const IntegrationsRevamped: React.FC = () => {
+interface IntegrationsRevampedProps {
+  addTimeEntry: (entry: any) => any;
+}
+
+export const IntegrationsRevamped: React.FC<IntegrationsRevampedProps> = ({ addTimeEntry }) => {
   const [connectedIntegrations, setConnectedIntegrations] = useState<Set<string>>(new Set());
   const [isConnecting, setIsConnecting] = useState<Set<string>>(new Set());
   const [testResults, setTestResults] = useState<{ [key: string]: ApiTestResult }>({});
   const [isImporting, setIsImporting] = useState(false);
   const [, setAuthStatus] = useState({ isAuthenticated: false });
-  
-  // Get access to the time tracker hook
-  const { addTimeEntry } = useTimeTracker();
 
   // Check authentication status on mount
   useEffect(() => {

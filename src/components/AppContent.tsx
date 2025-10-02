@@ -112,7 +112,7 @@ export function AppContent() {
           />
         );
       case 'integrations':
-        return <IntegrationsRevamped />;
+        return <IntegrationsRevamped addTimeEntry={timeTracker.addTimeEntry} />;
       case 'permissions':
         return <PermissionsManager />;
       case 'settings':
