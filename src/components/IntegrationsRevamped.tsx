@@ -124,10 +124,10 @@ export const IntegrationsRevamped: React.FC = () => {
       // Generate auth URL with PKCE
       const { url, state, codeVerifier } = await googleIntegrationService.generateAuthUrl();
       
-      // Store state and code verifier in sessionStorage for validation
-      sessionStorage.setItem('google_oauth_state', state);
-      sessionStorage.setItem('google_oauth_code_verifier', codeVerifier);
-      sessionStorage.setItem('connecting_service', integrationId);
+      // Store state and code verifier in localStorage for popup access
+      localStorage.setItem('google_oauth_state', state);
+      localStorage.setItem('google_oauth_code_verifier', codeVerifier);
+      localStorage.setItem('connecting_service', integrationId);
       
       // Open OAuth popup with noopener=false to avoid COOP issues
       const popup = window.open(

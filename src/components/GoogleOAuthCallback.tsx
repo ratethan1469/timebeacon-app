@@ -45,14 +45,14 @@ export const GoogleOAuthCallback: React.FC = () => {
           throw new Error('Missing required OAuth parameters (code or state)');
         }
         
-        // Get expected state and code verifier from sessionStorage
-        const expectedState = sessionStorage.getItem('google_oauth_state');
-        const codeVerifier = sessionStorage.getItem('google_oauth_code_verifier');
-        
+        // Get expected state and code verifier from localStorage (shared with parent window)
+        const expectedState = localStorage.getItem('google_oauth_state');
+        const codeVerifier = localStorage.getItem('google_oauth_code_verifier');
+
         if (!expectedState) {
           throw new Error('Missing OAuth state in session. Please try again.');
         }
-        
+
         if (!codeVerifier) {
           throw new Error('Missing PKCE code verifier in session. Please try again.');
         }
@@ -100,10 +100,10 @@ export const GoogleOAuthCallback: React.FC = () => {
           }
         });
         
-        // Clean up session storage
-        sessionStorage.removeItem('google_oauth_state');
-        sessionStorage.removeItem('google_oauth_code_verifier');
-        sessionStorage.removeItem('connecting_service');
+        // Clean up localStorage
+        localStorage.removeItem('google_oauth_state');
+        localStorage.removeItem('google_oauth_code_verifier');
+        localStorage.removeItem('connecting_service');
         
         // Notify parent window of success
         if (window.opener) {
