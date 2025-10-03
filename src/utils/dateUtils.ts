@@ -1,5 +1,6 @@
 export const formatDateWithDay = (dateString: string) => {
-  const date = new Date(dateString);
+  // Force local timezone by appending T00:00:00 to prevent UTC conversion
+  const date = new Date(dateString + 'T00:00:00');
   const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
   const dayName = dayOfWeek === 0 || dayOfWeek === 6 ? null : dayNames[dayOfWeek - 1];
@@ -8,11 +9,11 @@ export const formatDateWithDay = (dateString: string) => {
     day: 'numeric',
     year: 'numeric'
   });
-  
+
   if (!dayName) {
     return null; // Weekend day
   }
-  
+
   return {
     dayName,
     shortDay: dayName.slice(0, 3),
