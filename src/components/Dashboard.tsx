@@ -4,7 +4,6 @@ import { formatTimeRange } from '../utils/dateUtils';
 import { useCalendarEvents } from '../hooks/useCalendarEvents';
 import { CalendarEvent } from '../services/calendarIntegration';
 import { RealGoogleCalendar } from './RealGoogleCalendar';
-import GoogleAiSync from './GoogleAiSync';
 
 interface DashboardProps {
   entries: TimeEntry[];
@@ -729,18 +728,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Real Google Calendar Integration */}
       <RealGoogleCalendar />
 
-      {/* Google AI Sync Section */}
-      <GoogleAiSync
-        accessToken={localStorage.getItem('google_access_token') || undefined}
-        onEntriesProcessed={(entries) => {
-          // Add processed entries to the current entries
-          entries.forEach(entry => {
-            if (onAddEntry) {
-              onAddEntry(entry);
-            }
-          });
-        }}
-      />
 
       <div className="week-summary">
         <div className="summary-card">
