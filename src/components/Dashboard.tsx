@@ -3,7 +3,6 @@ import { TimeEntry, Project } from '../types';
 import { formatTimeRange } from '../utils/dateUtils';
 import { useCalendarEvents } from '../hooks/useCalendarEvents';
 import { CalendarEvent } from '../services/calendarIntegration';
-import { RealGoogleCalendar } from './RealGoogleCalendar';
 
 interface DashboardProps {
   entries: TimeEntry[];
@@ -725,8 +724,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       )}
 
-      {/* Real Google Calendar Integration */}
-      <RealGoogleCalendar />
 
 
       <div className="week-summary">
