@@ -24,13 +24,16 @@ export const formatDateWithDay = (dateString: string) => {
 
 export const formatTimeRange = (startTime: string, endTime: string) => {
   const formatTime = (time: string) => {
+    if (!time || typeof time !== 'string' || !time.includes(':')) {
+      return '12:00 AM'; // Default fallback
+    }
     const [hours, minutes] = time.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
     return `${displayHour}:${minutes} ${ampm}`;
   };
-  
+
   return `${formatTime(startTime)} - ${formatTime(endTime)}`;
 };
 
