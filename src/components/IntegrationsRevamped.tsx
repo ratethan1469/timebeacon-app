@@ -177,7 +177,14 @@ export const IntegrationsRevamped: React.FC<IntegrationsRevampedProps> = ({ addT
           if (data?.tokenResponse) {
             localStorage.setItem('google_oauth_tokens', JSON.stringify(data.tokenResponse));
             console.log('✅ Stored OAuth tokens');
-            
+
+            // Set tokens in the service so it can use them immediately
+            googleIntegrationService.setAccessToken(
+              data.tokenResponse.access_token,
+              data.tokenResponse.refresh_token,
+              data.tokenResponse.expires_in
+            );
+
             // Mock user info since we don't get it from the callback yet
             const mockUserInfo = {
               email: 'user@example.com',
@@ -188,11 +195,11 @@ export const IntegrationsRevamped: React.FC<IntegrationsRevampedProps> = ({ addT
             localStorage.setItem('google_user_info', JSON.stringify(mockUserInfo));
             console.log('✅ Stored user info');
           }
-          
+
           // Mark as connected and run tests
           const googleServices = ['gmail', 'google-calendar', 'google-drive'];
           setConnectedIntegrations(new Set(googleServices));
-          
+
           // Update auth status
           const newAuthStatus = googleIntegrationService.getAuthStatus();
           setAuthStatus(newAuthStatus);
@@ -302,12 +309,12 @@ export const IntegrationsRevamped: React.FC<IntegrationsRevampedProps> = ({ addT
   const triggerDataImport = async () => {
     console.log('📊 Starting automatic data import...');
     setIsImporting(true);
-    
+
     try {
       // Check if we have stored tokens
       const storedTokens = localStorage.getItem('google_oauth_tokens');
       const userInfo = localStorage.getItem('google_user_info');
-      
+
       if (!storedTokens || !userInfo) {
         console.log('❌ No tokens found for data import');
         setIsImporting(false);
@@ -316,24 +323,27 @@ export const IntegrationsRevamped: React.FC<IntegrationsRevampedProps> = ({ addT
 
       const tokens = JSON.parse(storedTokens);
       console.log('✅ Found stored tokens, starting data import...');
-      
+      console.log('🔑 Token preview:', {
+        hasAccessToken: !!tokens.access_token,
+        tokenPrefix: tokens.access_token?.substring(0, 10) + '...',
+        expiresIn: tokens.expires_in
+      });
+
       let totalImported = 0;
       const errors: string[] = [];
-      
-      // Import this week's Gmail data
-      const gmailResult = await intelligentDataImportService.importGmailData(tokens);
-      if (gmailResult.success) {
-        // Add each time entry to the tracker
-        gmailResult.timeEntries.forEach(entry => {
-          addTimeEntry(entry);
-          totalImported++;
-        });
-        console.log(`📧 Added ${gmailResult.timeEntries.length} email time entries`);
-      } else {
-        errors.push(...gmailResult.errors);
+
+      // Import this week's Gmail data (only opened emails with history tracking)
+      try {
+        console.log('📧 Starting Gmail History Tracking...');
+        const { gmailHistoryTracker } = await import('../services/gmailHistoryTracking');
+        await gmailHistoryTracker.initialize(tokens.access_token);
+        console.log('✅ Gmail History Tracking initialized - will track when you open emails');
+      } catch (gmailError) {
+        console.error('❌ Gmail tracking failed:', gmailError);
+        errors.push(`Gmail tracking: ${gmailError instanceof Error ? gmailError.message : String(gmailError)}`);
       }
-      
-      // Import this week's Calendar data  
+
+      // Import this week's Calendar data
       const calendarResult = await intelligentDataImportService.importCalendarData(tokens);
       if (calendarResult.success) {
         // Add each time entry to the tracker

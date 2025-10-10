@@ -158,6 +158,30 @@ export class GoogleIntegrationService {
 
   constructor() {
     this.config = this.loadAndValidateConfig();
+    this.loadStoredTokens();
+  }
+
+  /**
+   * Loads tokens from localStorage if available
+   */
+  private loadStoredTokens(): void {
+    try {
+      const storedTokens = localStorage.getItem('google_oauth_tokens');
+      if (storedTokens) {
+        const tokens = JSON.parse(storedTokens);
+        this.accessToken = tokens.access_token;
+        this.refreshToken = tokens.refresh_token;
+
+        if (tokens.expires_in) {
+          const expiryTime = Date.now() + (tokens.expires_in * 1000);
+          this.tokenExpiry = new Date(expiryTime);
+        }
+
+        console.log('✅ Loaded tokens from localStorage');
+      }
+    } catch (error) {
+      console.error('Failed to load stored tokens:', error);
+    }
   }
 
   // ========================================
@@ -936,7 +960,27 @@ export class GoogleIntegrationService {
     this.accessToken = undefined;
     this.refreshToken = undefined;
     this.tokenExpiry = undefined;
+
+    // Clear from localStorage too
+    localStorage.removeItem('google_oauth_tokens');
+    localStorage.removeItem('google_user_info');
+
     logApiCall('OAuth', 'clearTokens', true);
+  }
+
+  /**
+   * Manually set access token (e.g., after OAuth callback)
+   */
+  public setAccessToken(token: string, refreshToken?: string, expiresIn?: number): void {
+    this.accessToken = token;
+    if (refreshToken) {
+      this.refreshToken = refreshToken;
+    }
+    if (expiresIn) {
+      this.tokenExpiry = new Date(Date.now() + expiresIn * 1000);
+    }
+
+    console.log('✅ Access token set in service');
   }
 }
 

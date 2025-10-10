@@ -9,6 +9,11 @@ const crypto = require('crypto');
 const { google } = require('googleapis');
 require('dotenv').config();
 
+// Import custom routes
+const timeEntriesRouter = require('./backend/routes/timeEntries');
+const aiPreferencesRouter = require('./backend/routes/aiPreferences');
+const { storeGmailActivities, storeCalendarActivities } = require('./backend/services/processingService');
+
 const app = express();
 const PORT = process.env.BACKEND_PORT || 3001;
 
@@ -522,15 +527,26 @@ app.post('/api/google/gmail/messages', async (req, res) => {
       }
     }
 
+    // Store Gmail messages as activities (if user and company info available)
+    if (req.body.userId && req.body.companyId && messages.length > 0) {
+      try {
+        await storeGmailActivities(req.body.userId, req.body.companyId, messages);
+        console.log(`Stored ${messages.length} Gmail messages as activities`);
+      } catch (storeError) {
+        console.error('Error storing Gmail activities:', storeError);
+        // Don't fail the request if storage fails
+      }
+    }
+
     res.json({
       success: true,
       messages: messages
     });
   } catch (error) {
     console.error('Error fetching Gmail messages:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to fetch Gmail messages',
-      success: false 
+      success: false
     });
   }
 });
@@ -575,15 +591,26 @@ app.post('/api/google/calendar/events', async (req, res) => {
       location: event.location
     }));
 
+    // Store Calendar events as activities (if user and company info available)
+    if (req.body.userId && req.body.companyId && events.length > 0) {
+      try {
+        await storeCalendarActivities(req.body.userId, req.body.companyId, events);
+        console.log(`Stored ${events.length} Calendar events as activities`);
+      } catch (storeError) {
+        console.error('Error storing Calendar activities:', storeError);
+        // Don't fail the request if storage fails
+      }
+    }
+
     res.json({
       success: true,
       events: events
     });
   } catch (error) {
     console.error('Error fetching Calendar events:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to fetch calendar events',
-      success: false 
+      success: false
     });
   }
 });
@@ -629,6 +656,16 @@ app.get('/api/google/calendar/events', async (req, res) => {
     });
   }
 });
+
+// =================
+// CUSTOM API ROUTES
+// =================
+
+// Mount time entries router
+app.use('/api/time-entries', timeEntriesRouter);
+
+// Mount AI preferences router
+app.use('/api/ai-preferences', aiPreferencesRouter);
 
 // =================
 // STATIC FILE SERVING (after API routes)

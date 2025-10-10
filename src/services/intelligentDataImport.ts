@@ -150,19 +150,26 @@ export class IntelligentDataImportService {
       });
       
       if (!calendarResponse.ok) {
-        throw new Error(`Calendar API error: ${calendarResponse.statusText}`);
+        const errorText = await calendarResponse.text();
+        console.error('📅 Calendar API error response:', errorText);
+        throw new Error(`Calendar API error: ${calendarResponse.status} ${calendarResponse.statusText} - ${errorText}`);
       }
-      
+
       const calendarData = await calendarResponse.json();
       const events: CalendarEventData[] = calendarData.items || [];
-      
+
+      console.log(`📅 Raw events from Google Calendar:`, events.length);
+      console.log('📅 Sample events:', events.slice(0, 3));
+
       // Filter to only meetings (not all-day events)
-      const meetings = events.filter(event => 
-        event.start && event.end && 
-        !event.start.includes('T00:00:00') // Skip all-day events
-      );
-      
-      console.log(`📅 Found ${meetings.length} meetings to process`);
+      // Google Calendar events have start.dateTime for timed events, start.date for all-day
+      const meetings = events.filter(event => {
+        // Check if event has dateTime (not just date for all-day events)
+        const hasDateTime = event.start?.dateTime && event.end?.dateTime;
+        return hasDateTime;
+      });
+
+      console.log(`📅 Found ${meetings.length} meetings to process (filtered from ${events.length} total events)`);
       
       // Process each meeting and create time entries
       const timeEntries = [];
@@ -236,19 +243,38 @@ export class IntelligentDataImportService {
     }
   }
   
-  private async processMeetingToTimeEntry(meeting: CalendarEventData): Promise<any | null> {
+  private async processMeetingToTimeEntry(meeting: any): Promise<any | null> {
     try {
+      // Google Calendar events have start.dateTime and end.dateTime for timed events
+      const startDateTime = meeting.start?.dateTime || meeting.start?.date;
+      const endDateTime = meeting.end?.dateTime || meeting.end?.date;
+
+      if (!startDateTime || !endDateTime) {
+        console.log('⚠️ Skipping event without start/end time:', meeting.summary);
+        return null;
+      }
+
       // Calculate actual meeting duration
-      const startTime = new Date(meeting.start);
-      const endTime = new Date(meeting.end);
+      const startTime = new Date(startDateTime);
+      const endTime = new Date(endDateTime);
       const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-      
+
+      // Skip very short meetings (< 5 minutes)
+      if (durationHours < 0.08) {
+        console.log('⚠️ Skipping very short meeting:', meeting.summary, durationHours);
+        return null;
+      }
+
       // Determine project/client from attendees or meeting title
-      const { client, project } = this.matchMeetingToProject(meeting);
-      
+      const attendeeEmails = (meeting.attendees || []).map((a: any) => a.email);
+      const { client, project } = this.matchMeetingToProject({
+        ...meeting,
+        attendees: attendeeEmails
+      });
+
       // Create time entry
       const timeEntry = {
-        date: meeting.start.split('T')[0],
+        date: startDateTime.split('T')[0],
         startTime: startTime.toTimeString().slice(0, 5),
         duration: durationHours,
         client,
@@ -258,9 +284,11 @@ export class IntelligentDataImportService {
         source: 'calendar' as const,
         isAutomatic: true,
         meetingType: this.determineMeetingType(meeting),
-        tags: ['meeting', 'imported', 'ai-processed']
+        tags: ['meeting', 'imported', 'calendar']
       };
-      
+
+      console.log('✅ Created time entry for meeting:', meeting.summary, `(${durationHours.toFixed(2)}h)`);
+
       return timeEntry;
     } catch (error) {
       console.error('Error processing meeting to time entry:', error);

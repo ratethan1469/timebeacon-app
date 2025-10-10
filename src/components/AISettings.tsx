@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { aiService } from '../services/aiService';
 import { contentAnalyzer } from '../services/contentAnalyzer';
 import { calendarIntegration } from '../services/calendarIntegration';
+import { aiPreferencesApi, AIPreferences } from '../services/aiPreferencesApi';
 
 // AI Control Center Settings Interface
 interface AIControlSettings {
@@ -44,7 +45,13 @@ export const AIControlCenter: React.FC<AIControlCenterProps> = ({ onClose }) => 
   const [isTestingAI, setIsTestingAI] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
 
-  // AI Control Settings State
+  // Backend preferences state
+  const [backendPreferences, setBackendPreferences] = useState<AIPreferences | null>(null);
+  const [isLoadingPrefs, setIsLoadingPrefs] = useState(true);
+  const [isSavingPrefs, setIsSavingPrefs] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // AI Control Settings State (local UI state)
   const [settings, setSettings] = useState<AIControlSettings>({
     confidenceThreshold: 0.80,
     descriptionLength: 'standard',
@@ -69,12 +76,36 @@ export const AIControlCenter: React.FC<AIControlCenterProps> = ({ onClose }) => 
     }
   });
 
-  // Load settings from localStorage
+  // Load settings from backend on mount
   useEffect(() => {
-    const savedSettings = localStorage.getItem('aiControlSettings');
-    if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
+    async function loadPreferences() {
+      try {
+        setIsLoadingPrefs(true);
+        const prefs = await aiPreferencesApi.getPreferences();
+        setBackendPreferences(prefs);
+
+        // Sync backend preferences to local state
+        setSettings(prev => ({
+          ...prev,
+          confidenceThreshold: prefs.confidence_threshold / 100, // Backend uses 0-100, UI uses 0-1
+          descriptionLength: prefs.description_length,
+          autoApprove: prefs.auto_approve_enabled,
+        }));
+
+        console.log('✅ Loaded AI preferences from backend:', prefs);
+      } catch (error) {
+        console.error('Failed to load AI preferences:', error);
+        // Fall back to localStorage
+        const savedSettings = localStorage.getItem('aiControlSettings');
+        if (savedSettings) {
+          setSettings(JSON.parse(savedSettings));
+        }
+      } finally {
+        setIsLoadingPrefs(false);
+      }
     }
+
+    loadPreferences();
   }, []);
 
   // Update status every 5 seconds
@@ -88,10 +119,37 @@ export const AIControlCenter: React.FC<AIControlCenterProps> = ({ onClose }) => 
     return () => clearInterval(interval);
   }, []);
 
-  // Save settings to localStorage
+  // Save settings to localStorage AND backend
   const saveSettings = (newSettings: AIControlSettings) => {
     setSettings(newSettings);
     localStorage.setItem('aiControlSettings', JSON.stringify(newSettings));
+  };
+
+  // Save to backend
+  const handleSaveToBackend = async () => {
+    try {
+      setIsSavingPrefs(true);
+      setSaveSuccess(false);
+
+      await aiPreferencesApi.updatePreferences({
+        confidence_threshold: Math.round(settings.confidenceThreshold * 100), // Convert 0-1 to 0-100
+        description_length: settings.descriptionLength,
+        auto_approve_enabled: settings.autoApprove,
+        only_opened_emails: true, // Default for now
+        skip_promotional: true, // Default for now
+      });
+
+      setSaveSuccess(true);
+      console.log('✅ Saved AI preferences to backend');
+
+      // Hide success message after 3 seconds
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error('Failed to save AI preferences:', error);
+      alert('Failed to save preferences. Please try again.');
+    } finally {
+      setIsSavingPrefs(false);
+    }
   };
 
   const updateSetting = (path: string, value: any) => {
@@ -188,11 +246,63 @@ export const AIControlCenter: React.FC<AIControlCenterProps> = ({ onClose }) => 
       
       <div style={{ padding: '32px' }}>
         
-        {/* Processing Configuration */}
-        <div className="settings-section">
-          <h3 className="settings-section-title">⚙️ Processing Configuration</h3>
-          
-          <div style={{ display: 'grid', gap: '24px', marginBottom: '32px' }}>
+        {/* Loading State */}
+        {isLoadingPrefs && (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+            <p>Loading AI preferences...</p>
+          </div>
+        )}
+
+        {!isLoadingPrefs && (
+          <>
+            {/* Save Button - Sticky at top */}
+            <div style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+              background: 'var(--bg-primary)',
+              padding: '16px 0',
+              marginBottom: '24px',
+              borderBottom: '2px solid var(--border-color)',
+              display: 'flex',
+              gap: '12px',
+              alignItems: 'center'
+            }}>
+              <button
+                className="btn btn-primary"
+                onClick={handleSaveToBackend}
+                disabled={isSavingPrefs}
+                style={{ fontSize: '16px', padding: '12px 24px' }}
+              >
+                {isSavingPrefs ? '💾 Saving...' : '💾 Save Changes to Backend'}
+              </button>
+
+              {saveSuccess && (
+                <div style={{
+                  background: '#10b981',
+                  color: 'white',
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>
+                  ✅ Saved successfully!
+                </div>
+              )}
+
+              {backendPreferences && (
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  Last updated: {new Date(backendPreferences.updated_at).toLocaleString()}
+                </div>
+              )}
+            </div>
+
+            {/* Processing Configuration */}
+            <div className="settings-section">
+              <h3 className="settings-section-title">⚙️ Processing Configuration</h3>
+
+              <div style={{ display: 'grid', gap: '24px', marginBottom: '32px' }}>
             {/* Confidence Threshold */}
             <div className="setting-item">
               <label className="setting-label">
@@ -742,6 +852,8 @@ export const AIControlCenter: React.FC<AIControlCenterProps> = ({ onClose }) => 
             </button>
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

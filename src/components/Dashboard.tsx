@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TimeEntry, Project } from '../types';
 import { formatTimeRange } from '../utils/dateUtils';
 import { useCalendarEvents } from '../hooks/useCalendarEvents';
 import { CalendarEvent } from '../services/calendarIntegration';
+import { timeEntriesApi, TimeEntry as AITimeEntry } from '../services/timeEntriesApi';
 
 interface DashboardProps {
   entries: TimeEntry[];
@@ -108,6 +109,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     skipWeekends: false
   });
 
+  // AI Time Entries State
+  const [aiEntries, setAiEntries] = useState<AITimeEntry[]>([]);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [isProcessingActivities, setIsProcessingActivities] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [showAISection, setShowAISection] = useState(true);
+
   // Memoize form update function to prevent unnecessary re-renders
   const updateAddEntryForm = React.useCallback((updates: Partial<typeof addEntryForm>) => {
     setAddEntryForm(prev => ({ ...prev, ...updates }));
@@ -127,6 +135,102 @@ export const Dashboard: React.FC<DashboardProps> = ({
   
   // Calendar events integration
   const { getEventsForDate } = useCalendarEvents();
+
+  // Load AI-generated pending entries on mount
+  useEffect(() => {
+    loadAIPendingEntries();
+  }, []);
+
+  const loadAIPendingEntries = async () => {
+    try {
+      setIsLoadingAI(true);
+      setAiError(null);
+      const pending = await timeEntriesApi.getPendingEntries(20);
+      setAiEntries(pending);
+    } catch (error) {
+      console.error('Failed to load AI entries:', error);
+      setAiError(error instanceof Error ? error.message : 'Failed to load AI entries');
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
+
+  const handleProcessActivities = async () => {
+    try {
+      setIsProcessingActivities(true);
+      setAiError(null);
+      const result = await timeEntriesApi.processActivities();
+
+      // Reload pending entries
+      await loadAIPendingEntries();
+
+      // Show success message
+      alert(`✅ Generated ${result.count} new time entries from your activities!`);
+    } catch (error) {
+      console.error('Failed to process activities:', error);
+      setAiError(error instanceof Error ? error.message : 'Failed to process activities');
+      alert('❌ Failed to process activities. Please try again.');
+    } finally {
+      setIsProcessingActivities(false);
+    }
+  };
+
+  const handleApproveAIEntry = async (entryId: string) => {
+    try {
+      await timeEntriesApi.approveEntry(entryId);
+
+      // Remove from AI entries list
+      setAiEntries(prev => prev.filter(e => e.id !== entryId));
+
+      // Optionally reload to refresh the list
+      await loadAIPendingEntries();
+    } catch (error) {
+      console.error('Failed to approve entry:', error);
+      alert('Failed to approve entry. Please try again.');
+    }
+  };
+
+  const handleDeleteAIEntry = async (entryId: string) => {
+    if (!confirm('Delete this AI-generated entry?')) return;
+
+    try {
+      await timeEntriesApi.deleteEntry(entryId);
+
+      // Remove from AI entries list
+      setAiEntries(prev => prev.filter(e => e.id !== entryId));
+    } catch (error) {
+      console.error('Failed to delete entry:', error);
+      alert('Failed to delete entry. Please try again.');
+    }
+  };
+
+  const handleEditAIEntry = async (entryId: string, updates: Partial<AITimeEntry>) => {
+    try {
+      await timeEntriesApi.updateEntry(entryId, updates);
+
+      // Reload to show updated entry
+      await loadAIPendingEntries();
+    } catch (error) {
+      console.error('Failed to update entry:', error);
+      alert('Failed to update entry. Please try again.');
+    }
+  };
+
+  const handleBulkApproveAI = async () => {
+    if (!confirm(`Approve all ${aiEntries.length} AI-generated entries?`)) return;
+
+    try {
+      await timeEntriesApi.bulkApprove(aiEntries.map(e => e.id));
+
+      // Clear AI entries
+      setAiEntries([]);
+
+      alert(`✅ Approved ${aiEntries.length} entries!`);
+    } catch (error) {
+      console.error('Failed to bulk approve:', error);
+      alert('Failed to approve some entries. Please try again.');
+    }
+  };
   
   const weekDates = getWeekDates(currentWeek);
   
@@ -702,19 +806,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <span style={{ fontWeight: '600', color: 'var(--brand-primary)' }}>
               {selectedEntries.size} entries selected
             </span>
-            <button 
+            <button
               className="btn btn-secondary btn-small"
               onClick={() => handleBulkStatusUpdate('pending')}
             >
               Mark as Pending
             </button>
-            <button 
+            <button
               className="btn btn-primary btn-small"
               onClick={() => handleBulkStatusUpdate('approved')}
             >
               Mark as Approved
             </button>
-            <button 
+            <button
               className="btn btn-secondary btn-small"
               onClick={() => setSelectedEntries(new Set())}
             >
@@ -724,7 +828,167 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       )}
 
+      {/* AI-Generated Time Entries Section */}
+      {showAISection && aiEntries.length > 0 && (
+        <div className="content-card" style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: 'none', color: 'white' }}>
+          <div style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="m12 7-3 4 3 4 3-4-3-4z"></path><line x1="8" y1="14" x2="8" y2="16"></line><line x1="16" y1="14" x2="16" y2="16"></line></svg>
+                  AI-Generated Time Entries
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '14px', opacity: 0.9 }}>
+                  {aiEntries.length} entries pending your review
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                {aiEntries.length > 1 && (
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleBulkApproveAI}
+                    style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}
+                  >
+                    ✓ Approve All ({aiEntries.length})
+                  </button>
+                )}
+                <button
+                  className="btn btn-secondary btn-small"
+                  onClick={() => setShowAISection(false)}
+                  style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
 
+            <div style={{ display: 'grid', gap: '12px', maxHeight: '400px', overflowY: 'auto' }}>
+              {aiEntries.map(entry => {
+                const startDate = new Date(entry.start_time);
+                const endDate = new Date(entry.end_time);
+                const duration = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
+
+                return (
+                  <div
+                    key={entry.id}
+                    style={{
+                      background: 'rgba(255,255,255,0.95)',
+                      color: '#1f2937',
+                      borderRadius: '8px',
+                      padding: '16px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>
+                          {entry.summary || 'Untitled Entry'}
+                        </div>
+                        <div style={{ fontSize: '14px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                          <span>📅 {startDate.toLocaleDateString()}</span>
+                          <span>⏰ {startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} - {endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+                          <span>⏱️ {formatHours(duration)}</span>
+                          {entry.customer_name && <span>👤 {entry.customer_name}</span>}
+                          {entry.category && <span className="meeting-type">{entry.category}</span>}
+                        </div>
+                        {entry.ai_confidence && (
+                          <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ flex: 1, height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
+                              <div
+                                style={{
+                                  height: '100%',
+                                  background: entry.ai_confidence >= 80 ? '#10b981' : entry.ai_confidence >= 60 ? '#f59e0b' : '#ef4444',
+                                  width: `${entry.ai_confidence}%`,
+                                  transition: 'width 0.3s ease'
+                                }}
+                              />
+                            </div>
+                            <span style={{ fontSize: '12px', color: '#6b7280', minWidth: '60px' }}>
+                              {entry.ai_confidence}% confident
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                      <button
+                        className="btn btn-small btn-primary"
+                        onClick={() => handleApproveAIEntry(entry.id)}
+                        style={{ fontSize: '14px' }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}><polyline points="20,6 9,17 4,12"></polyline></svg>
+                        Approve
+                      </button>
+                      <button
+                        className="btn btn-small btn-secondary"
+                        onClick={() => {
+                          const newSummary = prompt('Edit description:', entry.summary);
+                          if (newSummary && newSummary !== entry.summary) {
+                            handleEditAIEntry(entry.id, { summary: newSummary });
+                          }
+                        }}
+                        style={{ fontSize: '14px' }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
+                        Edit
+                      </button>
+                      <button
+                        className="btn btn-small btn-danger"
+                        onClick={() => handleDeleteAIEntry(entry.id)}
+                        style={{ fontSize: '14px' }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3,6 5,6 21,6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Generate New Entries Button */}
+      {console.log('Should show generate button - showAISection:', showAISection)}
+      {showAISection && (
+        <div style={{ marginBottom: '24px', textAlign: 'center' }}>
+          {console.log('Button is rendering - isProcessingActivities:', isProcessingActivities)}
+          <button
+            className="btn btn-primary"
+            onClick={handleProcessActivities}
+            disabled={isProcessingActivities}
+            style={{
+              fontSize: '16px',
+              padding: '12px 24px',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              border: 'none'
+            }}
+          >
+            {isProcessingActivities ? (
+              <>⏳ Processing Activities...</>
+            ) : (
+              <>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="m12 7-3 4 3 4 3-4-3-4z"></path><line x1="8" y1="14" x2="8" y2="16"></line><line x1="16" y1="14" x2="16" y2="16"></line></svg>
+                Generate New Time Entries from Activities
+              </>
+            )}
+          </button>
+          {aiError && (
+            <div style={{
+              marginTop: '12px',
+              padding: '12px',
+              background: '#fee2e2',
+              color: '#991b1b',
+              borderRadius: '6px',
+              fontSize: '14px'
+            }}>
+              ⚠️ {aiError}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="week-summary">
         <div className="summary-card">

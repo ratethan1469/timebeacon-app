@@ -1,0 +1,673 @@
+# Cursor/Claude AI Coding Prompt for Timebeacon Development
+# CRITICAL: DATABASE TECHNOLOGY
+**We are using SUPABASE (PostgreSQL), NOT MongoDB**
+
+All database operations should use:
+- Supabase JavaScript client
+- PostgreSQL patterns and queries
+- Proper foreign key relationships
+- Row Level Security (RLS) policies for company data isolation
+
+---
+
+[rest of your existing .cursorrules content...]
+## **PROJECT CONTEXT**
+
+I'm building Timebeacon, an AI-powered time tracking and resource management platform for Customer Success Managers (CSMs), Professional Services (PS), and Implementation teams at B2B SaaS companies. The product automatically generates time entries by analyzing activities from Gmail, Google Calendar, Slack, and Zoom using AI.
+
+**Existing Codebase:** https://github.com/ratethan1469/timebeacon-app
+- Frontend: React + TypeScript + Vite
+- Backend: Node.js + Express + MongoDB
+- Auth: JWT + Google OAuth (already working)
+- Deployment: Vercel
+- Environments: Local, QA (app.qa.timebeacon.io), Production (app.timebeacon.io)
+
+---
+
+## **PRODUCT REQUIREMENTS**
+
+### **Core User Flow**
+
+1. **User connects their tools** (Gmail, Calendar, Slack, Zoom) via OAuth
+2. **Timebeacon automatically captures activity data** via APIs:
+   - Emails sent/received (metadata only: subject, participants, timestamp)
+   - Calendar meetings (title, attendees, duration)
+   - Slack messages in customer-specific channels (thread context)
+   - Zoom calls and transcripts (meeting metadata)
+3. **Raw data is immediately processed:**
+   - Structured metadata is stored in MongoDB
+   - Content is summarized for AI processing
+   - Original content is hashed (SHA-256) and deleted for compliance
+4. **AI analyzes activities and generates time entries:**
+   - Maps activities to specific customers/accounts
+   - Categories work type (Customer Call, Email Support, Implementation, Internal)
+   - Groups related activities (email thread + meeting + follow-up = single entry)
+   - Generates natural language summaries
+   - Estimates time spent
+   - Provides confidence score (0-100)
+5. **User reviews AI-generated entries in dashboard:**
+   - Approve entries with one click
+   - Edit customer, category, duration, or summary
+   - Reject/delete entries
+   - Add manual entries
+6. **Approved entries become utilization data:**
+   - Team capacity dashboards
+   - Customer effort analysis
+   - Resource planning insights
+   - Bandwidth forecasting
+
+---
+
+## **TECHNICAL ARCHITECTURE (INSPIRED BY LAUREL)**
+
+### **Data Processing Pipeline**
+
+```
+User Activity (Gmail, Calendar, Slack, Zoom)
+    ↓
+API Integration Layer (OAuth tokens, rate limiting)
+    ↓
+Raw Activity Storage (MongoDB - temporary, hashed after processing)
+    ↓
+AI Processing Service (OpenAI GPT-4 or Anthropic Claude)
+    ↓
+Time Entry Generation (with customer mapping, categorization)
+    ↓
+User Review Dashboard (approve/edit/reject)
+    ↓
+Analytics & Reporting (utilization, capacity, customer insights)
+```
+
+### **Key Design Principles from Laurel**
+
+1. **Company-Specific AI Models:**
+   - Each company gets isolated data processing
+   - AI learns company-specific customers, projects, terminology
+   - No data leakage between companies
+   - Personalized to team's work patterns
+
+2. **Privacy-First Architecture:**
+   - Store only metadata and summaries
+   - Hash original content immediately after processing
+   - Delete raw email bodies, message content, transcripts
+   - Audit trail with hashes only
+   - User controls what's tracked
+
+3. **Intelligent Grouping:**
+   - Related activities grouped into single time entry
+   - Example: Meeting → Follow-up email → Slack discussion = one "Customer Implementation Call" entry
+   - Contextual understanding across platforms
+
+4. **Confidence-Based Review:**
+   - High confidence (>80%): Auto-approve option
+   - Medium confidence (50-80%): Flag for review
+   - Low confidence (<50%): Clearly marked, provide suggestions
+
+5. **Background Processing:**
+   - Scheduled jobs process activities every 4-6 hours
+   - Real-time processing for immediate feedback
+   - Nightly batch for comprehensive analysis
+
+---
+
+## **WHAT I NEED YOU TO BUILD**
+
+### **Phase 1: Core AI Processing (Priority 1)**
+
+**File: `backend/services/aiService.ts`**
+
+Create an AI service that:
+- Takes array of activities (emails, meetings, messages)
+- Accepts user context (role, known customers, active projects)
+- Calls OpenAI GPT-4 API with structured prompt
+- Returns array of time entries with:
+  - Customer/account name (matched to known customers)
+  - Category (Customer Call, Email Support, Implementation, Internal Meeting, etc.)
+  - Start time and duration
+  - Summary (2-3 sentences in natural language)
+  - Confidence score
+  - Source activity IDs (for traceability)
+  - Billable flag
+
+**Requirements:**
+- Use OpenAI's JSON mode for structured output
+- Handle API errors gracefully with fallback
+- Support both OpenAI and Anthropic Claude APIs
+- Low temperature (0.1) for consistency
+- Include retry logic with exponential backoff
+- Log all AI API calls for debugging
+
+**File: `backend/services/processingService.ts`**
+
+Create processing orchestration that:
+- Fetches unprocessed activities from MongoDB
+- Groups activities by user and time window
+- Calls AI service to generate time entries
+- Stores time entries in MongoDB with status "pending_review"
+- Marks activities as processed
+- Hashes and deletes sensitive content
+- Returns processing statistics
+
+**Requirements:**
+- Transaction support for data consistency
+- Error handling per user (one failure doesn't break batch)
+- Processing metrics (activities processed, entries created, confidence distribution)
+- Idempotent (can safely re-run)
+
+---
+
+### **Phase 2: Activity Capture Integration (Priority 2)**
+
+**Update: `backend/routes/google.ts`**
+
+Enhance existing Google OAuth integrations to store activities:
+
+**Gmail Integration:**
+- After fetching emails, store as activities in MongoDB:
+  ```typescript
+  {
+    userId: string,
+    type: 'email',
+    source: 'gmail',
+    timestamp: Date,
+    metadata: {
+      subject: string,
+      from: string,
+      to: string[],
+      threadId: string
+    },
+    contentSummary: string (first 200 chars),
+    contentHash: string (SHA-256 of full body),
+    processed: false,
+    createdAt: Date
+  }
+  ```
+- Delete `contentSummary` after AI processing
+- Keep only `contentHash` for audit trail
+
+**Calendar Integration:**
+- Store meetings as activities:
+  ```typescript
+  {
+    userId: string,
+    type: 'meeting',
+    source: 'calendar',
+    timestamp: Date (meeting start),
+    metadata: {
+      title: string,
+      attendees: string[],
+      duration: number (minutes),
+      location?: string,
+      description?: string
+    },
+    processed: false,
+    createdAt: Date
+  }
+  ```
+
+**Slack Integration (New):**
+- Use Slack OAuth and Events API
+- Subscribe to message events in channels user has access to
+- Store as activities with channel context
+- Group by thread for better AI understanding
+
+**Zoom Integration (New):**
+- Use Zoom OAuth and API
+- Fetch meeting metadata and transcripts (if available)
+- Store as activities with participant info
+
+---
+
+### **Phase 3: API Endpoints (Priority 2)**
+
+**File: `backend/routes/timeEntries.ts`**
+
+Create RESTful API:
+
+```typescript
+GET    /api/time-entries/pending          // Get entries needing review
+GET    /api/time-entries/approved         // Get approved entries
+GET    /api/time-entries?start=X&end=Y    // Get entries in date range
+POST   /api/time-entries/process          // Manually trigger AI processing
+POST   /api/time-entries                  // Create manual entry
+PATCH  /api/time-entries/:id              // Edit entry
+PATCH  /api/time-entries/:id/approve      // Approve entry
+PATCH  /api/time-entries/:id/reject       // Reject entry
+DELETE /api/time-entries/:id              // Delete entry
+GET    /api/time-entries/stats            // Get utilization stats
+```
+
+**Requirements:**
+- JWT authentication middleware on all routes
+- Company-level data isolation (users only see their company's data)
+- Input validation with Zod or similar
+- Proper HTTP status codes
+- Error messages that help debugging
+
+---
+
+### **Phase 4: Frontend Dashboard (Priority 3)**
+
+**File: `frontend/src/components/TimeEntryReview.tsx`**
+
+Create React component with:
+
+**Time Entry Cards:**
+- Customer name (prominent)
+- Category badge with color coding
+- Date/time range
+- Duration
+- AI-generated summary
+- Confidence indicator (visual: green >80%, yellow 50-80%, red <50%)
+- Source indicators (icons for email, meeting, slack, zoom)
+- Action buttons: Approve, Edit, Delete
+
+**Bulk Actions:**
+- Select multiple entries
+- Bulk approve
+- Bulk categorize
+
+**Manual Entry:**
+- Button to create entry manually
+- Form with customer dropdown, category, time range, description
+
+**Smart Features:**
+- Auto-refresh every 30 seconds
+- Toast notifications for actions
+- Keyboard shortcuts (A to approve, E to edit, D to delete)
+- Undo functionality
+
+**Styling:**
+- Use Tailwind CSS (already in project)
+- Responsive design (mobile-friendly)
+- Accessible (ARIA labels, keyboard navigation)
+- Loading states and skeletons
+
+---
+
+### **Phase 5: Background Processing (Priority 4)**
+
+**File: `backend/api/cron/processActivities.ts`**
+
+Create Vercel Cron endpoint:
+- Runs every 4-6 hours
+- Processes all active users
+- Sends notifications when new entries available
+- Logs processing metrics to MongoDB
+
+**Requirements:**
+- Authentication via bearer token (CRON_SECRET env var)
+- Idempotent (safe to run multiple times)
+- Failure isolation (one user failure doesn't stop others)
+- Performance monitoring
+- Error notifications (email/Slack when failures)
+
+**File: `vercel.json`**
+
+Configure cron schedule:
+```json
+{
+  "crons": [{
+    "path": "/api/cron/processActivities",
+    "schedule": "0 */6 * * *"
+  }]
+}
+```
+
+---
+
+## **DATABASE SCHEMAS**
+
+### **MongoDB Collections**
+
+**companies:**
+```typescript
+{
+  _id: ObjectId,
+  name: string,
+  customers: string[], // Known customer names
+  projects: string[], // Active project names
+  createdAt: Date,
+  settings: {
+    autoApproveThreshold: number, // Confidence % for auto-approve
+    defaultBillable: boolean
+  }
+}
+```
+
+**users:** (existing - enhance)
+```typescript
+{
+  _id: ObjectId,
+  email: string,
+  name: string,
+  role: string, // 'CSM' | 'PS' | 'Implementation' | 'Admin'
+  companyId: ObjectId,
+  integrations: {
+    gmail: { connected: boolean, lastSyncAt: Date },
+    calendar: { connected: boolean, lastSyncAt: Date },
+    slack: { connected: boolean, workspaceId: string, lastSyncAt: Date },
+    zoom: { connected: boolean, lastSyncAt: Date }
+  },
+  preferences: {
+    autoProcess: boolean,
+    notificationEmail: boolean
+  }
+}
+```
+
+**activities:**
+```typescript
+{
+  _id: ObjectId,
+  userId: ObjectId,
+  companyId: ObjectId,
+  type: 'email' | 'meeting' | 'message' | 'call',
+  source: 'gmail' | 'calendar' | 'slack' | 'zoom',
+  timestamp: Date,
+  metadata: object, // Source-specific structured data
+  contentSummary: string, // Deleted after processing
+  contentHash: string, // SHA-256 hash for audit trail
+  processed: boolean,
+  processedAt: Date,
+  createdAt: Date
+}
+```
+
+**timeEntries:**
+```typescript
+{
+  _id: ObjectId,
+  userId: ObjectId,
+  companyId: ObjectId,
+  customerId: ObjectId, // Reference to customers collection
+  customerName: string, // Denormalized for quick access
+  category: string,
+  startTime: Date,
+  endTime: Date,
+  durationMinutes: number,
+  summary: string,
+  billable: boolean,
+  status: 'pending_review' | 'approved' | 'rejected',
+  aiConfidence: number, // 0-100
+  sourceActivityIds: ObjectId[], // Links to activities
+  createdAt: Date,
+  approvedAt: Date,
+  approvedBy: ObjectId,
+  editHistory: Array<{
+    editedAt: Date,
+    editedBy: ObjectId,
+    changes: object
+  }>
+}
+```
+
+**customers:**
+```typescript
+{
+  _id: ObjectId,
+  companyId: ObjectId,
+  name: string,
+  aliases: string[], // Alternative names for matching
+  salesforceId: string,
+  status: 'active' | 'inactive',
+  tier: 'enterprise' | 'mid-market' | 'smb',
+  createdAt: Date
+}
+```
+
+---
+
+## **AI PROMPT ENGINEERING**
+
+### **System Prompt:**
+
+```
+You are an intelligent time tracking assistant for customer-facing teams at B2B SaaS companies. Your role is to analyze work activities (emails, meetings, messages, calls) and generate accurate, meaningful time entries.
+
+Core Principles:
+- Focus on CUSTOMER-FACING work (CSM, Professional Services, Implementation)
+- Map activities to specific customer accounts whenever possible
+- Group related activities into single coherent time entries
+- Be conservative with confidence scores - only use high confidence when certain
+- Distinguish between customer work and internal work clearly
+- Use natural, professional language in summaries
+
+Context Understanding:
+- CSMs focus on customer success, adoption, renewals, escalations
+- PS teams focus on implementations, migrations, technical projects
+- Implementation specialists focus on onboarding, training, configuration
+
+Output Requirements:
+- Return valid JSON only
+- Include confidence score for each entry (0-100)
+- Link to source activities by ID
+- Estimate realistic durations based on activity type and complexity
+```
+
+### **User Prompt Template:**
+
+```
+CONTEXT:
+Company: {companyName}
+User Role: {userRole} (CSM/PS/Implementation)
+Known Customers: {customerList}
+Active Projects: {projectList}
+Date Range: {startDate} to {endDate}
+
+ACTIVITIES TO ANALYZE:
+{activitiesJSON}
+
+TASK:
+Analyze these activities and create time entries. For each entry:
+
+1. CUSTOMER MATCHING:
+   - Identify which customer this relates to (use customer names from context)
+   - If multiple customers, create separate entries
+   - Mark as "Internal" if no customer identified
+
+2. CATEGORIZATION:
+   - Customer Call/Meeting: Synchronous conversation
+   - Email Support: Async written communication
+   - Implementation Work: Technical setup, configuration, migration
+   - Onboarding/Training: Teaching customers to use product
+   - Escalation Management: Urgent issues, executive involvement
+   - Internal Meeting: Team discussions, planning
+   - Documentation: Writing guides, creating materials
+
+3. INTELLIGENT GROUPING:
+   - Group related activities into single entry
+   - Example: Pre-meeting email + meeting + follow-up = one "Customer Call" entry
+   - Don't create separate entries for each email in a thread
+
+4. DURATION ESTIMATION:
+   - Meetings: Use actual calendar duration
+   - Emails: 5-15 minutes depending on length/complexity
+   - Implementation work: Estimate based on scope
+   - Be realistic - don't inflate time
+
+5. SUMMARY WRITING:
+   - 2-3 sentences maximum
+   - Focus on WHAT was discussed and OUTCOMES
+   - Use professional, clear language
+   - Include customer name naturally in summary
+
+OUTPUT FORMAT (JSON):
+{
+  "time_entries": [
+    {
+      "customerId": "match from context or null",
+      "customerName": "Acme Corp" or "Internal",
+      "category": "Customer Call",
+      "startTime": "2024-01-15T10:00:00Z",
+      "endTime": "2024-01-15T11:00:00Z",
+      "durationMinutes": 60,
+      "summary": "Discussed Q1 implementation timeline with Acme Corp technical team. Reviewed API integration requirements and addressed security questions. Scheduled follow-up for next week.",
+      "billable": true,
+      "confidence": 85,
+      "reasoning": "High confidence - clear meeting on calendar with Acme attendees, followed by implementation-related emails",
+      "sourceActivityIds": ["activity_123", "activity_124", "activity_125"]
+    }
+  ],
+  "unmatched_activities": [
+    {
+      "activityId": "activity_999",
+      "reason": "Could not determine customer context - appears to be personal email"
+    }
+  ],
+  "processing_notes": "Grouped 5 activities into 2 time entries. One activity excluded as non-work-related."
+}
+
+IMPORTANT GUIDELINES:
+- Only include work-related activities in time entries
+- Be conservative with confidence - use >80% only when very certain
+- If unsure about customer, mark confidence lower and flag for review
+- Group intelligently but don't force unrelated activities together
+- Preserve important details in summaries (specific topics, decisions made)
+```
+
+---
+
+## **CODE QUALITY REQUIREMENTS**
+
+1. **TypeScript Strict Mode:**
+   - No `any` types without justification
+   - Proper interface definitions for all data structures
+   - Null/undefined handling
+
+2. **Error Handling:**
+   - Try-catch blocks around external API calls
+   - Meaningful error messages
+   - Log errors with context
+   - Don't expose internal errors to users
+
+3. **Testing:**
+   - Unit tests for AI service logic
+   - Integration tests for API endpoints
+   - Mock OpenAI responses for deterministic tests
+
+4. **Performance:**
+   - Database indexes on frequently queried fields
+   - Pagination for list endpoints
+   - Efficient MongoDB queries (avoid N+1)
+   - Rate limiting on external API calls
+
+5. **Security:**
+   - Encrypt OAuth tokens at rest
+   - Company-level data isolation (no cross-company data access)
+   - Input validation and sanitization
+   - CORS configuration
+   - Rate limiting on public endpoints
+
+6. **Code Style:**
+   - Consistent with existing codebase
+   - ESLint configuration
+   - Prettier formatting
+   - Meaningful variable names
+   - Comments for complex logic only
+
+---
+
+## **ENVIRONMENT VARIABLES NEEDED**
+
+```bash
+# Existing
+MONGODB_URI=mongodb+srv://...
+JWT_SECRET=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+
+# New for AI Processing
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...  # Optional alternative
+CRON_SECRET=...  # Random secret for securing cron endpoints
+
+# New for Slack Integration
+SLACK_CLIENT_ID=...
+SLACK_CLIENT_SECRET=...
+
+# New for Zoom Integration
+ZOOM_CLIENT_ID=...
+ZOOM_CLIENT_SECRET=...
+```
+
+---
+
+## **SUCCESS CRITERIA**
+
+The implementation is successful when:
+
+1. **AI generates accurate time entries** (>70% confidence on average)
+2. **User can review and approve** entries in <2 minutes
+3. **Privacy is maintained** (content deleted after processing)
+4. **System processes activities** every 6 hours automatically
+5. **No data leakage** between companies
+6. **API response times** <500ms for most endpoints
+7. **Frontend loads** and is interactive in <3 seconds
+8. **Mobile responsive** dashboard works well on phones
+
+---
+
+## **DEVELOPMENT WORKFLOW**
+
+1. **Start with AI service** - This is the core differentiator
+2. **Test AI locally** with sample data before integrating
+3. **Enhance Google integrations** to store activities
+4. **Build API endpoints** with proper auth and validation
+5. **Create frontend dashboard** iteratively
+6. **Add background processing** last
+7. **Deploy to QA environment** for testing
+8. **Get beta user feedback** before production
+
+---
+
+## **WHAT NOT TO DO**
+
+❌ Don't use desktop agents or screen monitoring (privacy issues)
+❌ Don't store raw email/message content permanently
+❌ Don't expose one company's data to another company
+❌ Don't use synchronous processing for AI calls (use async/jobs)
+❌ Don't make API calls without rate limiting
+❌ Don't auto-approve low confidence entries
+❌ Don't overcomplicate - start simple and iterate
+❌ Don't ignore existing code patterns in the repo
+
+---
+
+## **CURSOR/CLAUDE SPECIFIC INSTRUCTIONS**
+
+When helping me code:
+
+1. **Read the existing codebase** at https://github.com/ratethan1469/timebeacon-app to understand patterns
+2. **Maintain consistency** with existing code style, file structure, naming conventions
+3. **Provide complete files** when creating new modules (not just snippets)
+4. **Include imports** and proper TypeScript types
+5. **Add comments** for complex logic but avoid obvious comments
+6. **Suggest improvements** to existing code when relevant
+7. **Consider MongoDB-specific** patterns (not SQL)
+8. **Think about Vercel deployment** constraints
+9. **Prioritize features** that directly impact user value
+10. **Ask clarifying questions** if requirements are ambiguous
+
+**When I say "implement X":**
+- Write production-ready code
+- Include error handling
+- Add TypeScript types
+- Consider edge cases
+- Make it testable
+
+**When I say "help me debug X":**
+- Ask to see relevant code/logs
+- Suggest likely causes
+- Provide debugging steps
+- Offer specific fixes
+
+**When I say "review this code":**
+- Check for bugs and edge cases
+- Suggest optimizations
+- Verify TypeScript correctness
+- Comment on architecture/patterns
+
+---
+
+This is a real product going to real users. Code quality, security, and user experience matter. Let's build something great! 🚀

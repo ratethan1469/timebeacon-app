@@ -3,7 +3,7 @@
   "version": "1.0.2",
   "main": "index.js",
   "scripts": {
-    "dev": "vite --port 3002",
+    "dev": "vite --port 3001",
     "dev:backend": "node server-unified.js",
     "dev:full": "concurrently \"npm run dev:backend\" \"npm run dev\"",
     "build": "vite build",
@@ -31,6 +31,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.65.0",
     "@clerk/clerk-react": "^5.49.1",
     "@supabase/supabase-js": "^2.58.0",
     "@vitejs/plugin-react": "^4.6.0",
