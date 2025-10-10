@@ -26,7 +26,8 @@ class HttpClient {
   private csrfToken: string | null = null;
 
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_URL || 'https://api.timebeacon.io';
+    // Use relative URLs for Vercel serverless functions
+    this.baseURL = import.meta.env.VITE_API_URL || '';
     this.initializeCsrfToken();
   }
 
