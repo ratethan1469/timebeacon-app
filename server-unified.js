@@ -58,9 +58,11 @@ app.use('/api/auth', authLimiter);
 // CORS configuration
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:3001', // In case Vite runs on 3001
-  'https://app.timebeacon.io', 
+  'http://localhost:3001',
+  'http://localhost:5173',
+  'https://app.timebeacon.io',
   'https://timebeacon.io',
+  'https://timebeacon-app.vercel.app',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
@@ -660,6 +662,12 @@ app.get('/api/google/calendar/events', async (req, res) => {
 // =================
 // CUSTOM API ROUTES
 // =================
+
+// CSRF Token endpoint
+app.get('/api/csrf-token', (req, res) => {
+  const token = crypto.randomBytes(32).toString('hex');
+  res.json({ token });
+});
 
 // Mount time entries router
 app.use('/api/time-entries', timeEntriesRouter);
