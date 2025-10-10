@@ -3,7 +3,7 @@ services:
     name: timebeacon-backend
     runtime: node
     buildCommand: npm install
-    startCommand: node src/server/server.js
+    startCommand: node server-unified.js
     envVars:
       - key: NODE_ENV
         value: production
@@ -11,7 +11,7 @@ services:
         value: 10000
       - key: MONGODB_URI
         value: mongodb+srv://ethanratnowsky_db_user:Y3Pfo3TNxrpiMoYd@timebeacon.xdz1thd.mongodb.net/timebeacon_production?retryWrites=true&w=majority&appName=Timebeacon
-      - key: JWT_SECRET  
+      - key: JWT_SECRET
         value: TimeBeacon_Prod_2025_$ecur3_K3y_F0r_Pr0duct10n_M0ng0DB_JWT_Auth3nt1cat10n_System
       - key: JWT_EXPIRES_IN
         value: 7d
