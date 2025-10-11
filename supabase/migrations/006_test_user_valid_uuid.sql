@@ -1,0 +1,39 @@
+-- Test user insertion with valid UUIDs
+-- User UUID: 1c3f32b0-c2de-43fb-a07b-063d8e0c5f64
+-- Company UUID: 11111111-1111-1111-1111-111111111111
+
+-- Create company with valid UUID
+INSERT INTO companies (id, name)
+VALUES (
+  '11111111-1111-1111-1111-111111111111',
+  'Test Company LLC'
+)
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name;
+
+-- Insert user profile with company_id
+INSERT INTO users (id, email, full_name, role, company_id)
+VALUES (
+  '1c3f32b0-c2de-43fb-a07b-063d8e0c5f64',
+  'test@timebeacon.io',
+  'Test User',
+  'CSM',
+  '11111111-1111-1111-1111-111111111111'
+)
+ON CONFLICT (id) DO UPDATE SET
+  email = EXCLUDED.email,
+  full_name = EXCLUDED.full_name,
+  role = EXCLUDED.role,
+  company_id = EXCLUDED.company_id;
+
+-- Verify it worked
+SELECT
+  u.id,
+  u.email,
+  u.full_name,
+  u.role,
+  u.company_id,
+  c.name as company_name
+FROM users u
+LEFT JOIN companies c ON u.company_id = c.id
+WHERE u.id = '1c3f32b0-c2de-43fb-a07b-063d8e0c5f64';
