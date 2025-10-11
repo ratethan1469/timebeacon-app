@@ -2,20 +2,18 @@
 -- User already created in Supabase Auth with UUID: 1c3f32b0-c2de-43fb-a07b-063d8e0c5f64
 
 -- First ensure the test company exists
-INSERT INTO companies (id, name, customers, projects, created_at, updated_at)
+INSERT INTO companies (id, name, customers, projects, created_at)
 VALUES (
   'test-company-123',
   'Test Company LLC',
   ARRAY['Acme Corp', 'TechStart Inc', 'Global Systems'],
   ARRAY['Implementation', 'Support', 'Training', 'Consulting'],
-  NOW(),
   NOW()
 )
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   customers = EXCLUDED.customers,
-  projects = EXCLUDED.projects,
-  updated_at = NOW();
+  projects = EXCLUDED.projects;
 
 -- Insert user profile with company_id
 INSERT INTO users (id, email, full_name, role, company_id, created_at, updated_at)
