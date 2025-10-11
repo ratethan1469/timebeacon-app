@@ -207,7 +207,8 @@ class HttpClient {
       }
 
       // Get CSRF token from server
-      const response = await fetch(`${this.baseURL}/csrf-token`, {
+      const url = this.baseURL ? `${this.baseURL}/api/csrf-token` : '/api/csrf-token';
+      const response = await fetch(url, {
         method: 'GET',
         credentials: 'same-origin',
       });
