@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { supabase } from '../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
@@ -13,6 +15,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   isLoading,
   setIsLoading
 }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -42,39 +45,65 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setIsLoading(true);
     setErrors({});
 
     try {
-      // Simulate successful login without any API calls
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
-
-      // Create successful login locally
-      const mockUser = {
-        id: Date.now(),
+      // Real Supabase authentication
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: formData.email.trim().toLowerCase(),
-        name: formData.email.split('@')[0]
-      };
-      const mockToken = 'timebeacon-token-' + Date.now();
-      
-      localStorage.setItem('timebeacon_token', mockToken);
-      localStorage.setItem('timebeacon_user', JSON.stringify(mockUser));
-      
+        password: formData.password
+      });
+
+      if (authError) {
+        throw new Error(authError.message);
+      }
+
+      if (!authData.user || !authData.session) {
+        throw new Error('Authentication failed - no user session');
+      }
+
+      // Get user profile with company_id from users table
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('id, email, full_name, role, company_id')
+        .eq('id', authData.user.id)
+        .single();
+
+      if (profileError || !userProfile) {
+        throw new Error('Failed to load user profile');
+      }
+
+      // Store real Supabase session
+      const session = authData.session;
+      localStorage.setItem('timebeacon_token', session.access_token);
+      localStorage.setItem('timebeacon_user', JSON.stringify({
+        id: userProfile.id,
+        email: userProfile.email,
+        name: userProfile.full_name || userProfile.email.split('@')[0],
+        role: userProfile.role,
+        company_id: userProfile.company_id
+      }));
+
       // Store remember me preference
       if (formData.rememberMe) {
         localStorage.setItem('timebeacon_remember', 'true');
       }
-      
+
       // Trigger auth context update
       window.dispatchEvent(new CustomEvent('auth-change'));
-      
-      // Success - user will be redirected by auth context
 
-    } catch (error) {
-      setErrors({ submit: 'Login failed. Please try again.' });
+      // Navigate to dashboard with company_id
+      navigate(`/${userProfile.company_id}/${userProfile.id}/dashboard`);
+
+    } catch (error: any) {
+      console.error('Login error:', error);
+      setErrors({
+        submit: error.message || 'Login failed. Please check your credentials and try again.'
+      });
     } finally {
       setIsLoading(false);
     }

@@ -62,7 +62,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Redirect authenticated users away from login page
   useEffect(() => {
     if (!isLoading && user && window.location.pathname === '/login') {
-      navigate('/dashboard');
+      // Get user data with company_id
+      const userData = typeof user === 'string' ? JSON.parse(user) : user;
+
+      if (userData.company_id && userData.id) {
+        // Redirect to multi-tenant dashboard
+        navigate(`/${userData.company_id}/${userData.id}/dashboard`);
+      } else {
+        // Fallback to simple dashboard
+        navigate('/dashboard');
+      }
     }
   }, [user, isLoading, navigate]);
 

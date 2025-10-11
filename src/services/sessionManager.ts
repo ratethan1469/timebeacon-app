@@ -50,32 +50,34 @@ class SessionManager {
    */
   getSession(): SessionData | null {
     try {
+      // First try the encrypted session key
       const encryptedData = localStorage.getItem(this.SESSION_KEY);
-      if (!encryptedData) return null;
-
-      const sessionData = this.decryptSession(encryptedData);
-      if (!sessionData) return null;
-
-      // Check if session is expired
-      if (this.isSessionExpired(sessionData)) {
-        this.clearSession();
-        return null;
+      if (encryptedData) {
+        const sessionData = this.decryptSession(encryptedData);
+        if (sessionData && !this.isSessionExpired(sessionData)) {
+          return sessionData;
+        }
       }
 
-      // Update last activity
-      sessionData.lastActivity = Date.now();
-      this.setSession({
-        accessToken: sessionData.token,
-        refreshToken: sessionData.refreshToken,
-        user: sessionData.user,
-        company: sessionData.company,
-        expiresIn: Math.floor((sessionData.expiresAt - Date.now()) / 1000),
-      });
+      // Fallback to simple token/user storage (for compatibility with Supabase auth)
+      const token = localStorage.getItem('timebeacon_token');
+      const userStr = localStorage.getItem('timebeacon_user');
 
-      return sessionData;
+      if (token && userStr) {
+        const user = JSON.parse(userStr);
+        return {
+          token,
+          refreshToken: '',
+          user,
+          company: { id: user.company_id },
+          expiresAt: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days from now
+          lastActivity: Date.now(),
+        };
+      }
+
+      return null;
     } catch (error) {
       console.error('Error getting session:', error);
-      this.clearSession();
       return null;
     }
   }
