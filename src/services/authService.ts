@@ -129,10 +129,21 @@ export async function handleOAuthCallback(): Promise<{
   user: AuthUser;
   needsCompany: boolean;
 }> {
-  const { data, error } = await supabase.auth.getSession();
+  // Exchange the code in the URL for a session
+  // This is crucial - it retrieves the session from URL params/hash
+  const { data, error } = await supabase.auth.exchangeCodeForSession(
+    window.location.search
+  );
 
   if (error || !data.session) {
-    throw new Error('Failed to retrieve OAuth session');
+    // Fallback: try to get existing session
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !sessionData.session) {
+      throw new Error('Failed to retrieve OAuth session');
+    }
+
+    return handleAuthenticationSuccess(sessionData.session.user, sessionData.session.access_token);
   }
 
   return handleAuthenticationSuccess(data.session.user, data.session.access_token);
