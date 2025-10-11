@@ -61,7 +61,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Redirect authenticated users away from login page
   useEffect(() => {
-    if (!isLoading && user && window.location.pathname === '/login') {
+    // Don't redirect if login page shows "expired" reason (user just got logged out)
+    const urlParams = new URLSearchParams(window.location.search);
+    const reason = urlParams.get('reason');
+
+    if (!isLoading && user && window.location.pathname === '/login' && reason !== 'expired') {
       // Get user data with company_id
       const userData = typeof user === 'string' ? JSON.parse(user) : user;
 

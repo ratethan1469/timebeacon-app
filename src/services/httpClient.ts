@@ -135,7 +135,17 @@ class HttpClient {
       // Handle authentication errors
       if (response.status === 401) {
         sessionManager.clearSession();
-        window.location.href = '/login?reason=expired';
+
+        // Clear all auth data to prevent loops
+        localStorage.removeItem('timebeacon_token');
+        localStorage.removeItem('timebeacon_user');
+        localStorage.removeItem('timebeacon_remember');
+
+        // Only redirect if not already on login page
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login?reason=expired';
+        }
+
         throw new Error('Authentication expired');
       }
 
