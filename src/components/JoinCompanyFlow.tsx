@@ -54,6 +54,14 @@ export const JoinCompanyFlow: React.FC = () => {
         throw new Error('User information not found');
       }
 
+      // Check if we have a valid session
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('🔍 Creating company - Session check:', {
+        hasSession: !!sessionData.session,
+        userId: sessionData.session?.user.id,
+        userIdMatch: sessionData.session?.user.id === user.id
+      });
+
       // Create company
       const { data: company, error: companyError } = await supabase
         .from('companies')
@@ -64,6 +72,8 @@ export const JoinCompanyFlow: React.FC = () => {
         })
         .select()
         .single();
+
+      console.log('🔍 Company creation result:', { company, error: companyError });
 
       if (companyError) throw companyError;
 
