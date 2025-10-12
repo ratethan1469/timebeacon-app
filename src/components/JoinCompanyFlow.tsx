@@ -62,8 +62,29 @@ export const JoinCompanyFlow: React.FC = () => {
         userIdMatch: sessionData.session?.user.id === user.id
       });
 
-      // Create company
-      const { data: company, error: companyError } = await supabase
+      if (!sessionData.session?.access_token) {
+        throw new Error('No access token found - session not established');
+      }
+
+      // WORKAROUND: Manually create a fresh Supabase client with the session
+      // This ensures the JWT is attached to the request
+      const { createClient } = await import('@supabase/supabase-js');
+      const authedClient = createClient(
+        import.meta.env.VITE_SUPABASE_URL || 'https://pfdhudkhqghiwowfihzv.supabase.co',
+        import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+        {
+          global: {
+            headers: {
+              Authorization: `Bearer ${sessionData.session.access_token}`
+            }
+          }
+        }
+      );
+
+      console.log('🔍 Using fresh client with explicit auth header');
+
+      // Create company with authed client
+      const { data: company, error: companyError } = await authedClient
         .from('companies')
         .insert({
           name: companyData.name,
