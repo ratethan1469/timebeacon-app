@@ -21,7 +21,13 @@ export const OAuthCallback: React.FC = () => {
       setStatus('loading');
       setMessage('Verifying your account...');
 
+      console.log('🔍 OAuth Callback URL:', window.location.href);
+      console.log('🔍 URL Hash:', window.location.hash);
+      console.log('🔍 URL Search:', window.location.search);
+
       const { user, needsCompany } = await authService.handleOAuthCallback();
+
+      console.log('✅ OAuth callback success:', { user, needsCompany });
 
       setMessage('Authentication successful!');
       setStatus('success');

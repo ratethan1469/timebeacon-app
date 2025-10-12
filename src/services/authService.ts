@@ -129,15 +129,27 @@ export async function handleOAuthCallback(): Promise<{
   user: AuthUser;
   needsCompany: boolean;
 }> {
+  console.log('🔍 Starting OAuth callback handler...');
+
   // Wait a moment for Supabase to process the URL and establish session
   await new Promise(resolve => setTimeout(resolve, 500));
 
   // Get the session - Supabase client automatically detects and processes OAuth redirect
   const { data, error } = await supabase.auth.getSession();
 
-  if (error || !data.session) {
-    throw new Error('Failed to retrieve OAuth session');
+  console.log('🔍 Session data:', { hasSession: !!data.session, error });
+
+  if (error) {
+    console.error('❌ Session error:', error);
+    throw new Error('Failed to retrieve OAuth session: ' + error.message);
   }
+
+  if (!data.session) {
+    console.error('❌ No session found');
+    throw new Error('Failed to retrieve OAuth session - no session data');
+  }
+
+  console.log('✅ Session retrieved, user ID:', data.session.user.id);
 
   return handleAuthenticationSuccess(data.session.user, data.session.access_token);
 }
