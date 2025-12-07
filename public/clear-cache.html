@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clearing Cache...</title>
+    <meta http-equiv="refresh" content="2;url=/login">
+</head>
+<body style="font-family: Arial; text-align: center; padding: 100px;">
+    <h1>🧹 Clearing cached data...</h1>
+    <p>You'll be redirected to login in 2 seconds.</p>
+    <script>
+        localStorage.clear();
+        sessionStorage.clear();
+        document.cookie.split(";").forEach(function(c) {
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+    </script>
+</body>
+</html>

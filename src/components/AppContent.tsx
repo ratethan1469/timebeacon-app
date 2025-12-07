@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useUser } from '@clerk/clerk-react';
 import { Sidebar } from './Sidebar';
 import { Dashboard } from './Dashboard';
 import { Reports } from './Reports';
@@ -13,13 +14,12 @@ import { NavigationItem } from '../types';
 import { useTimeTrackerSync } from '../hooks/useTimeTrackerSync';
 import { contentAnalyzer } from '../services/contentAnalyzer';
 import { aiService } from '../services/aiService';
-import { useAuth } from '../contexts/AuthContext';
 
 export function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const params = useParams();
-  const { user } = useAuth();
+  const { user } = useUser();
   const [aiEnabled, setAiEnabled] = useState(false);
   const [useEnhancedReports] = useState(true);
   const timeTracker = useTimeTrackerSync();
@@ -46,8 +46,9 @@ export function AppContent() {
   // Handle navigation
   const handleNavigation = (item: NavigationItem) => {
     // If we have accountId and visitorId from URL params, use them
-    // Otherwise fall back to user data from auth context
-    const accountId = params.accountId || user?.company_id;
+    // Otherwise fall back to user data from Clerk metadata
+    const metadata = user?.publicMetadata as { company_id?: string } | undefined;
+    const accountId = params.accountId || metadata?.company_id;
     const visitorId = params.visitorId || user?.id;
 
     if (accountId && visitorId) {

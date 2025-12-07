@@ -1,19 +1,19 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useUser } from '@clerk/clerk-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, isLoading } = useAuth();
+  const { isSignedIn, isLoaded, user } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
 
   // Redirect to login if not authenticated (after loading completes)
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (isLoaded && !isSignedIn) {
       // Save the attempted URL to redirect back after login
       const returnUrl = location.pathname + location.search;
       navigate('/login', {
@@ -21,10 +21,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         state: { returnUrl }
       });
     }
-  }, [user, isLoading, navigate, location]);
+  }, [isSignedIn, isLoaded, navigate, location]);
 
-  // Show loading state
-  if (isLoading) {
+  // Show loading state while Clerk initializes
+  if (!isLoaded) {
     return (
       <div style={{
         display: 'flex',
@@ -59,7 +59,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   // Don't render anything if not authenticated (will redirect)
-  if (!user) {
+  if (!isSignedIn) {
     return null;
   }
 

@@ -1,21 +1,23 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ClerkProvider } from '@clerk/clerk-react';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { AuthProvider } from './contexts/AuthContext';
 import Login from './components/Login';
 import { CompanySignup } from './components/CompanySignup';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AppContent } from './components/AppContent';
-import GoogleOAuthCallback from './components/GoogleOAuthCallback';
+import { AcceptInvite } from './components/AcceptInvite';
+
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_Y29tcGxldGUtc2hhcmstMjEuY2xlcmsuYWNjb3VudHMuZGV2JA';
 
 function App() {
   return (
-    <ThemeProvider>
-      <Router>
-        <AuthProvider>
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+      <ThemeProvider>
+        <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<CompanySignup />} />
-            <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
+            <Route path="/accept-invite" element={<AcceptInvite />} />
             
             {/* Multi-tenant routes */}
             <Route path="/:accountId/:visitorId/dashboard" element={
@@ -94,9 +96,9 @@ function App() {
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>
-        </AuthProvider>
-      </Router>
-    </ThemeProvider>
+        </Router>
+      </ThemeProvider>
+    </ClerkProvider>
   );
 }
 

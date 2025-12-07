@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeBeacon Login</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-box {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 8px;
+            font-size: 28px;
+        }
+        p {
+            text-align: center;
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+        .btn:hover {
+            background: #5568d3;
+        }
+        .status {
+            text-align: center;
+            color: #e53e3e;
+            margin-top: 16px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h1>⏰ TimeBeacon</h1>
+        <p>STATIC LOGIN PAGE - NO REACT</p>
+        
+        <button class="btn" onclick="testLogin()">
+            Test Login (No OAuth)
+        </button>
+        
+        <div class="status" id="status">
+            This page does NOT use React Router.<br>
+            If this page stays still, the redirect is in the React app.<br>
+            If it flickers, the redirect is elsewhere (Vercel, browser extension, etc.)
+        </div>
+    </div>
+    
+    <script>
+        function testLogin() {
+            document.getElementById('status').innerHTML = 
+                '<span style="color: green;">✓ Page is stable. React Router is the problem.</span>';
+        }
+        
+        // Detect any redirects
+        let redirectCount = 0;
+        const originalLocation = window.location.href;
+        setInterval(() => {
+            if (window.location.href !== originalLocation) {
+                redirectCount++;
+                document.getElementById('status').innerHTML = 
+                    `<span style="color: red;">⚠️ REDIRECT DETECTED #${redirectCount}<br>${window.location.href}</span>`;
+            }
+        }, 100);
+    </script>
+</body>
+</html>
