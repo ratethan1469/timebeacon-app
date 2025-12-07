@@ -6,8 +6,6 @@ import { CompanySignup } from './components/CompanySignup';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AppContent } from './components/AppContent';
 import GoogleOAuthCallback from './components/GoogleOAuthCallback';
-import OAuthCallback from './components/OAuthCallback';
-import JoinCompanyFlow from './components/JoinCompanyFlow';
 
 function App() {
   return (
@@ -18,8 +16,6 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<CompanySignup />} />
             <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
-            <Route path="/auth/callback" element={<OAuthCallback />} />
-            <Route path="/join-company" element={<JoinCompanyFlow />} />
             
             {/* Multi-tenant routes */}
             <Route path="/:accountId/:visitorId/dashboard" element={
@@ -96,7 +92,7 @@ function App() {
             } />
             
             {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>
         </AuthProvider>
       </Router>

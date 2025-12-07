@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../services/authService';
+import { useAuth } from '../contexts/AuthContext';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user, isLoading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -12,6 +15,46 @@ const Login: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Redirect authenticated users away from login page
+  useEffect(() => {
+    if (!authLoading && user) {
+      // Check if there's a return URL from the location state
+      const returnUrl = (location.state as any)?.returnUrl;
+
+      if (returnUrl && returnUrl !== '/login') {
+        // Redirect back to the page they were trying to access
+        navigate(returnUrl, { replace: true });
+      } else if (user.company_id && user.id) {
+        // User is already authenticated, redirect to their dashboard
+        navigate(`/${user.company_id}/${user.id}/dashboard`, { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [user, authLoading, navigate, location.state]);
+
+  // Show loading spinner while checking auth state
+  if (authLoading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <div style={{ color: 'white', fontSize: '18px' }}>
+          Loading...
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render login form if user is authenticated
+  if (user) {
+    return null;
+  }
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};

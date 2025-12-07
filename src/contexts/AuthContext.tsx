@@ -5,6 +5,8 @@ interface User {
   id: string;
   email: string;
   name: string;
+  role?: string | null;
+  company_id?: string | null;
 }
 
 interface AuthContextType {
@@ -59,25 +61,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => window.removeEventListener('auth-change', handleAuthChange);
   }, []);
 
-  // Redirect authenticated users away from login page
-  useEffect(() => {
-    // Don't redirect if login page shows "expired" reason (user just got logged out)
-    const urlParams = new URLSearchParams(window.location.search);
-    const reason = urlParams.get('reason');
-
-    if (!isLoading && user && window.location.pathname === '/login' && reason !== 'expired') {
-      // Get user data with company_id
-      const userData = typeof user === 'string' ? JSON.parse(user) : user;
-
-      if (userData.company_id && userData.id) {
-        // Redirect to multi-tenant dashboard
-        navigate(`/${userData.company_id}/${userData.id}/dashboard`);
-      } else {
-        // Fallback to simple dashboard
-        navigate('/dashboard');
-      }
-    }
-  }, [user, isLoading, navigate]);
+  // NO AUTOMATIC REDIRECTS - causes infinite loops
+  // Let the Login component handle navigation after successful login
 
   const logout = () => {
     localStorage.removeItem('timebeacon_token');
