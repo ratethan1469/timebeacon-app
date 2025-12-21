@@ -82,9 +82,9 @@ export class GoogleMVPIntegration {
       const codeChallenge = await this.generateCodeChallenge(codeVerifier);
       const state = this.generateCodeVerifier(); // Random state
 
-      // Store verifier for callback
-      sessionStorage.setItem('pkce_code_verifier', codeVerifier);
-      sessionStorage.setItem('oauth_state', state);
+      // Store verifier for callback (use localStorage - persists across redirects)
+      localStorage.setItem('pkce_code_verifier', codeVerifier);
+      localStorage.setItem('oauth_state', state);
 
       // Build OAuth URL - use authorization code flow
       const params = new URLSearchParams({

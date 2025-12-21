@@ -21,8 +21,8 @@ export const GoogleMVPCallback: React.FC = () => {
       }
 
       try {
-        // Get code verifier from session
-        const codeVerifier = sessionStorage.getItem('pkce_code_verifier');
+        // Get code verifier from localStorage (persists across redirects)
+        const codeVerifier = localStorage.getItem('pkce_code_verifier');
         if (!codeVerifier) {
           throw new Error('Code verifier not found');
         }
@@ -53,8 +53,8 @@ export const GoogleMVPCallback: React.FC = () => {
         }));
 
         // Clean up
-        sessionStorage.removeItem('pkce_code_verifier');
-        sessionStorage.removeItem('oauth_state');
+        localStorage.removeItem('pkce_code_verifier');
+        localStorage.removeItem('oauth_state');
 
         console.log('✅ Google OAuth successful!');
 
