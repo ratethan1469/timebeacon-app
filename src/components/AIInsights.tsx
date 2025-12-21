@@ -479,43 +479,70 @@ export const AIInsights: React.FC<AIInsightsProps> = ({
         {/* Quick Settings Overview */}
         <div className="settings-section">
           <h3 className="settings-section-title">⚙️ Quick Settings</h3>
-          
-          <div style={{ display: 'grid', gap: '20px' }}>
-            <div className="setting-item">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+
+          <div style={{ display: 'grid', gap: '12px' }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '12px 16px',
+              background: 'var(--surface)',
+              borderRadius: '8px',
+              border: '1px solid var(--border)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '18px' }}>📧</span>
                 <div>
-                  <strong>Gmail Domain Filtering</strong>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Only process emails with external participants</div>
-                </div>
-                <div className={`status-value ${settings.gmailDomainFilter.enabled ? 'status-success' : 'status-warning'}`}>
-                  {settings.gmailDomainFilter.enabled ? 'Enabled' : 'Disabled'}
+                  <strong style={{ fontSize: '14px' }}>Gmail Domain Filtering</strong>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>External participants only</div>
                 </div>
               </div>
+              <div className={`status-value ${settings.gmailDomainFilter.enabled ? 'status-success' : 'status-warning'}`} style={{ fontSize: '13px', padding: '4px 12px' }}>
+                {settings.gmailDomainFilter.enabled ? '✓ On' : 'Off'}
+              </div>
             </div>
-            
-            <div className="setting-item">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '12px 16px',
+              background: 'var(--surface)',
+              borderRadius: '8px',
+              border: '1px solid var(--border)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '18px' }}>💬</span>
                 <div>
-                  <strong>Slack Channel Filtering</strong>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    {settings.slackChannelFilter.keywords.length} keywords configured
+                  <strong style={{ fontSize: '14px' }}>Slack Channel Filtering</strong>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    {settings.slackChannelFilter.keywords.length} keywords
                   </div>
                 </div>
-                <div className={`status-value ${settings.slackChannelFilter.enabled ? 'status-success' : 'status-warning'}`}>
-                  {settings.slackChannelFilter.enabled ? 'Enabled' : 'Disabled'}
-                </div>
+              </div>
+              <div className={`status-value ${settings.slackChannelFilter.enabled ? 'status-success' : 'status-warning'}`} style={{ fontSize: '13px', padding: '4px 12px' }}>
+                {settings.slackChannelFilter.enabled ? '✓ On' : 'Off'}
               </div>
             </div>
-            
-            <div className="setting-item">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '12px 16px',
+              background: 'var(--surface)',
+              borderRadius: '8px',
+              border: '1px solid var(--border)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '18px' }}>⚡</span>
                 <div>
-                  <strong>Auto-Approval</strong>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Entries above {Math.round(settings.confidenceThreshold * 100)}% confidence</div>
+                  <strong style={{ fontSize: '14px' }}>Auto-Approval</strong>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Above {Math.round(settings.confidenceThreshold * 100)}% confidence</div>
                 </div>
-                <div className={`status-value ${settings.autoApprove ? 'status-success' : 'status-warning'}`}>
-                  {settings.autoApprove ? 'Enabled' : 'Manual Review'}
-                </div>
+              </div>
+              <div className={`status-value ${settings.autoApprove ? 'status-success' : 'status-warning'}`} style={{ fontSize: '13px', padding: '4px 12px' }}>
+                {settings.autoApprove ? '✓ On' : 'Off'}
               </div>
             </div>
           </div>
