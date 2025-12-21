@@ -73,60 +73,37 @@ export class GoogleMVPIntegration {
   }
 
   /**
-   * Initiate Google OAuth flow using PKCE
+   * Initiate Google OAuth flow using Authorization Code + PKCE
    */
   async authenticate(): Promise<boolean> {
     try {
       // Generate PKCE code verifier and challenge
       const codeVerifier = this.generateCodeVerifier();
       const codeChallenge = await this.generateCodeChallenge(codeVerifier);
+      const state = this.generateCodeVerifier(); // Random state
 
-      // Store verifier for later use
+      // Store verifier for callback
       sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+      sessionStorage.setItem('oauth_state', state);
 
-      // Build OAuth URL
+      // Build OAuth URL - use authorization code flow
       const params = new URLSearchParams({
         client_id: this.CLIENT_ID,
-        redirect_uri: `${window.location.origin}/integrations`,
-        response_type: 'token',
+        redirect_uri: `${window.location.origin}/auth/google/callback`,
+        response_type: 'code', // Request authorization code
         scope: this.SCOPES,
         code_challenge: codeChallenge,
         code_challenge_method: 'S256',
+        state: state,
+        access_type: 'offline'
       });
 
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 
-      // Open OAuth popup
-      const popup = window.open(authUrl, 'google-oauth', 'width=500,height=600');
+      // Redirect to Google OAuth
+      window.location.href = authUrl;
 
-      // Wait for OAuth callback
-      return new Promise((resolve) => {
-        const handleMessage = (event: MessageEvent) => {
-          if (event.data.type === 'google-oauth-success') {
-            this.tokens = event.data.tokens;
-            this.saveTokens();
-            window.removeEventListener('message', handleMessage);
-            resolve(true);
-          } else if (event.data.type === 'google-oauth-error') {
-            window.removeEventListener('message', handleMessage);
-            resolve(false);
-          }
-        };
-
-        window.addEventListener('message', handleMessage);
-
-        // Also check if popup was closed
-        const checkClosed = setInterval(() => {
-          if (popup?.closed) {
-            clearInterval(checkClosed);
-            window.removeEventListener('message', handleMessage);
-
-            // Check if we got tokens from hash
-            this.checkForTokensInHash();
-            resolve(this.isAuthenticated());
-          }
-        }, 500);
-      });
+      return true;
     } catch (error) {
       console.error('Google authentication failed:', error);
       return false;

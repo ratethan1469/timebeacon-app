@@ -6,6 +6,7 @@ import { CompanySignup } from './components/CompanySignup';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AppContent } from './components/AppContent';
 import { AcceptInvite } from './components/AcceptInvite';
+import { GoogleMVPCallback } from './components/GoogleMVPCallback';
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_Y29tcGxldGUtc2hhcmstMjEuY2xlcmsuYWNjb3VudHMuZGV2JA';
 
@@ -18,6 +19,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<CompanySignup />} />
             <Route path="/accept-invite" element={<AcceptInvite />} />
+            <Route path="/auth/google/callback" element={<GoogleMVPCallback />} />
             
             {/* Multi-tenant routes */}
             <Route path="/:accountId/:visitorId/dashboard" element={
