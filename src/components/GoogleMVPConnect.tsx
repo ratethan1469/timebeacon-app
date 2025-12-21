@@ -9,14 +9,15 @@ export const GoogleMVPConnect: React.FC = () => {
 
   useEffect(() => {
     // Check auth status on mount
-    setIsConnected(googleMVP.isAuthenticated());
+    const isAuth = googleMVP.isAuthenticated();
+    setIsConnected(isAuth);
 
-    // Check for OAuth callback
-    if (window.location.hash.includes('access_token')) {
-      googleMVP['checkForTokensInHash']();
-      setIsConnected(googleMVP.isAuthenticated());
+    // If just connected (has tokens but no sync stats), auto-sync
+    if (isAuth && !syncStats) {
+      console.log('📡 Auto-syncing after OAuth...');
+      handleSync();
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleConnect = async () => {
     const success = await googleMVP.authenticate();
