@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { supabase } from '../lib/supabase';
+import { GoogleMVPConnect } from './GoogleMVPConnect';
 
 interface Integration {
   id: string;
@@ -229,7 +230,22 @@ export const IntegrationsHub: React.FC = () => {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gap: '24px' }}>
+      {/* MVP Google Integration */}
+      <div style={{ marginBottom: '40px' }}>
+        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>
+          ✨ MVP Integration (Functional)
+        </h2>
+        <GoogleMVPConnect />
+      </div>
+
+      {/* Other Integrations (Coming Soon) */}
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--text-secondary)' }}>
+          Coming Soon
+        </h2>
+      </div>
+
+      <div style={{ display: 'grid', gap: '24px', opacity: 0.6 }}>
         {integrations.map(integration => (
           <div
             key={integration.id}
