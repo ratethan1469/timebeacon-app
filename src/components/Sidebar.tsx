@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavigationItem } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useUser, useClerk } from '@clerk/clerk-react';
 
 interface SidebarProps {
   activeItem: NavigationItem;
@@ -58,8 +58,11 @@ const getNavigationItems = (userRole?: string) => {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeItem, onItemClick }) => {
   const { theme, setTheme } = useTheme();
-  const { logout, user } = useAuth();
+  const { user } = useUser();
+  const { signOut } = useClerk();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const userRole = user?.publicMetadata?.role as string | undefined;
   
   const toggleTheme = () => {
     const themes: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system'];
@@ -112,7 +115,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeItem, onItemClick }) => 
         </button>
       </div>
       <nav className="nav-menu">
-        {getNavigationItems(user?.role).map((item) => (
+        {getNavigationItems(userRole).map((item) => (
           <a
             key={item.id}
             href="#"
@@ -145,15 +148,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeItem, onItemClick }) => 
           {!isCollapsed && user && (
             <div className="user-info">
               <div className="user-details">
-                <span className="user-name">{user.name}</span>
-                <span className="user-email">{user.email}</span>
+                <span className="user-name">{user.fullName || user.firstName || 'User'}</span>
+                <span className="user-email">{user.primaryEmailAddress?.emailAddress || ''}</span>
               </div>
             </div>
           )}
-          
-          <button 
+
+          <button
             className="logout-button"
-            onClick={logout}
+            onClick={() => signOut()}
             title={isCollapsed ? 'Logout' : 'Sign out'}
           >
             <span className="nav-icon">

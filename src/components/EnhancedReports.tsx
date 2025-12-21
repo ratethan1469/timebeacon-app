@@ -18,7 +18,7 @@ import {
   RadialLinearScale,
 } from 'chart.js';
 import { Bar, Line, Doughnut, Radar } from 'react-chartjs-2';
-import { useAuth } from '../contexts/AuthContext';
+import { useUser } from '@clerk/clerk-react';
 import { useTimeTrackerDB } from '../hooks/useTimeTrackerDB';
 import { advancedReportingService } from '../services/advancedReporting';
 import type { User } from '../types/auth';
@@ -50,7 +50,24 @@ interface ReportFilters {
 }
 
 const EnhancedReports: React.FC = () => {
-  const { user, checkPermission } = useAuth();
+  const { user: clerkUser } = useUser();
+  const userRole = clerkUser?.publicMetadata?.role as string | undefined;
+
+  const checkPermission = (resource: string, action: string): boolean => {
+    if (!userRole) return false;
+    if (userRole === 'owner' || userRole === 'admin') return true;
+    if (userRole === 'manager' && resource === 'reports' && action === 'read') return true;
+    return false;
+  };
+
+  const user = clerkUser ? {
+    id: clerkUser.id,
+    email: clerkUser.primaryEmailAddress?.emailAddress || '',
+    name: clerkUser.fullName || clerkUser.firstName || 'User',
+    role: userRole,
+    company_id: clerkUser.publicMetadata?.company_id as string | undefined
+  } as User : null;
+
   const { timeEntries, projects, clients } = useTimeTrackerDB();
   
   // State management

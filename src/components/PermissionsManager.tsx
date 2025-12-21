@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUser } from '@clerk/clerk-react';
 import { 
   User, 
   UserRole, 
@@ -31,7 +31,24 @@ interface PermissionAuditLog {
 }
 
 const PermissionsManager: React.FC = () => {
-  const { user, checkPermission } = useAuth();
+  const { user: clerkUser } = useUser();
+  const userRole = clerkUser?.publicMetadata?.role as UserRole | undefined;
+
+  const checkPermission = (resource: string, action: string): boolean => {
+    if (!userRole) return false;
+    if (userRole === 'owner' || userRole === 'admin') return true;
+    if (userRole === 'manager' && resource === 'users' && action === 'read') return true;
+    return false;
+  };
+
+  const user = clerkUser ? {
+    id: clerkUser.id,
+    email: clerkUser.primaryEmailAddress?.emailAddress || '',
+    name: clerkUser.fullName || clerkUser.firstName || 'User',
+    role: userRole,
+    company_id: clerkUser.publicMetadata?.company_id as string | undefined
+  } : null;
+
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [teamAssignments, setTeamAssignments] = useState<TeamAssignment[]>([]);

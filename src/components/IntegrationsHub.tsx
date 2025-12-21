@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUser } from '@clerk/clerk-react';
 import { supabase } from '../lib/supabase';
 
 interface Integration {
@@ -14,7 +14,7 @@ interface Integration {
 }
 
 export const IntegrationsHub: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useUser();
   const [integrations, setIntegrations] = useState<Integration[]>([
     {
       id: 'google',

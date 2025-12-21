@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUser } from '@clerk/clerk-react';
 import { TeamMember, TimeEntry } from '../types/auth';
 import { authService } from '../services/auth';
 
@@ -17,7 +17,17 @@ interface TeamInsightsProps {
 }
 
 export const TeamInsights: React.FC<TeamInsightsProps> = ({ isVisible }) => {
-  const { company, checkPermission } = useAuth();
+  const { user } = useUser();
+  const company = user?.publicMetadata?.company_id as string | undefined;
+  const userRole = user?.publicMetadata?.role as string | undefined;
+
+  const checkPermission = (resource: string, action: string): boolean => {
+    if (!userRole) return false;
+    if (userRole === 'owner' || userRole === 'admin') return true;
+    if (userRole === 'manager' && resource === 'reports' && action === 'read') return true;
+    return false;
+  };
+
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter'>('week');
   const [teamStats, setTeamStats] = useState<Record<string, TeamStats>>({});

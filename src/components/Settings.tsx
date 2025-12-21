@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings as SettingsType, Project } from '../types';
 import PermissionsManager from './PermissionsManager';
-import { useAuth } from '../contexts/AuthContext';
+import { useUser } from '@clerk/clerk-react';
 
 interface SettingsProps {
   settings: SettingsType;
@@ -20,7 +20,16 @@ export const Settings: React.FC<SettingsProps> = ({
   onUpdateProject,
   onDeleteProject,
 }) => {
-  const { checkPermission } = useAuth();
+  const { user } = useUser();
+  const userRole = user?.publicMetadata?.role as string | undefined;
+
+  const checkPermission = (resource: string, action: string): boolean => {
+    if (!userRole) return false;
+    if (userRole === 'owner' || userRole === 'admin') return true;
+    if (userRole === 'manager' && resource === 'users' && action === 'read') return true;
+    return false;
+  };
+
   const [activeTab, setActiveTab] = useState<'general' | 'permissions'>('general');
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
