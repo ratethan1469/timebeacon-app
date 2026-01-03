@@ -835,11 +835,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="m12 7-3 4 3 4 3-4-3-4z"></path><line x1="8" y1="14" x2="8" y2="16"></line><line x1="16" y1="14" x2="16" y2="16"></line></svg>
-                  AI-Generated Time Entries
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v6m0 6v6M1 12h6m6 0h6"></path></svg>
+                  ✨ Lumina Suggestions
                 </h3>
                 <p style={{ margin: '4px 0 0 0', fontSize: '14px', opacity: 0.9 }}>
-                  {aiEntries.length} entries pending your review
+                  {aiEntries.length} time {aiEntries.length === 1 ? 'entry' : 'entries'} detected from your activities
                 </p>
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
@@ -967,11 +967,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
             }}
           >
             {isProcessingActivities ? (
-              <>⏳ Processing Activities...</>
+              <>✨ Lumina is analyzing your activities...</>
             ) : (
               <>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="m12 7-3 4 3 4 3-4-3-4z"></path><line x1="8" y1="14" x2="8" y2="16"></line><line x1="16" y1="14" x2="16" y2="16"></line></svg>
-                Generate New Time Entries from Activities
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}><circle cx="12" cy="12" r="5"></circle><path d="M12 1v6m0 6v6M1 12h6m6 0h6"></path></svg>
+                ✨ Ask Lumina to Find Time Entries
               </>
             )}
           </button>

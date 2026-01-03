@@ -9,22 +9,17 @@ export const useCalendarEvents = () => {
   const fetchEvents = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      // Force sync calendar events
-      const result = await calendarIntegration.forceSync();
-      
-      if (result.success) {
-        console.log(`Calendar sync completed. Processed ${result.eventsProcessed} new events.`);
-        
-        // For now, we'll get events from the mock data
-        // In a real implementation, these would be stored and retrieved from the database
-        setEvents([]);
-      } else {
-        setError(result.error || 'Failed to sync calendar events');
-      }
+      // Fetch events directly from the calendar integration service
+      const fetchedEvents = await calendarIntegration.fetchCalendarEvents();
+
+      setEvents(fetchedEvents);
+      console.log(`📅 Loaded ${fetchedEvents.length} calendar events for display`);
     } catch (err) {
+      console.error('Failed to fetch calendar events:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch calendar events');
+      setEvents([]);
     } finally {
       setIsLoading(false);
     }

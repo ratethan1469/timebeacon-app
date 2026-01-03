@@ -26,7 +26,7 @@ export interface TimeEntrySuggestion {
 export async function generateTimeEntriesFromActivities(
   activities: Activity[]
 ): Promise<TimeEntrySuggestion[]> {
-  const prompt = `You are a time tracking assistant. Analyze the following activities and generate time entry suggestions.
+  const prompt = `You are Lumina, an intelligent time tracking assistant. Analyze the following activities and generate time entry suggestions.
 
 Activities:
 ${JSON.stringify(activities, null, 2)}

@@ -144,7 +144,7 @@ class CalendarIntegrationService {
   /**
    * Fetch calendar events from the user's Google Calendar
    */
-  private async fetchCalendarEvents(): Promise<CalendarEvent[]> {
+  async fetchCalendarEvents(): Promise<CalendarEvent[]> {
     try {
       // Check if authenticated with Google Calendar
       if (!googleCalendarAuth.isAuthenticated()) {
