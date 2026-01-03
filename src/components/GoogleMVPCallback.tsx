@@ -34,16 +34,22 @@ export const GoogleMVPCallback: React.FC = () => {
 
         const redirectUri = `${window.location.origin}/auth/google/callback`;
         const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+        const clientSecret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET;
 
-        console.log('📤 Exchanging code for token...', { redirectUri, clientId: clientId?.substring(0, 20) + '...' });
+        console.log('📤 Exchanging code for token...', {
+          redirectUri,
+          clientId: clientId?.substring(0, 20) + '...',
+          hasClientSecret: !!clientSecret
+        });
 
-        // Exchange code for token (without client secret, PKCE only)
+        // Exchange code for token with client secret
         const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
             code,
             client_id: clientId,
+            client_secret: clientSecret || '',
             redirect_uri: redirectUri,
             grant_type: 'authorization_code',
             code_verifier: codeVerifier
