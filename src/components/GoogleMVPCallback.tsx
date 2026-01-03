@@ -21,12 +21,21 @@ export const GoogleMVPCallback: React.FC = () => {
       }
 
       try {
+        console.log('🔄 Processing OAuth callback...');
+
         // Get code verifier from localStorage (persists across redirects)
         // Try both keys for compatibility
         const codeVerifier = localStorage.getItem('google_oauth_code_verifier') || localStorage.getItem('pkce_code_verifier');
+        console.log('🔑 Code verifier found:', !!codeVerifier);
+
         if (!codeVerifier) {
-          throw new Error('Code verifier not found');
+          throw new Error('Code verifier not found in localStorage');
         }
+
+        const redirectUri = `${window.location.origin}/auth/google/callback`;
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+        console.log('📤 Exchanging code for token...', { redirectUri, clientId: clientId?.substring(0, 20) + '...' });
 
         // Exchange code for token (without client secret, PKCE only)
         const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -34,37 +43,58 @@ export const GoogleMVPCallback: React.FC = () => {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
             code,
-            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-            redirect_uri: `${window.location.origin}/auth/google/callback`,
+            client_id: clientId,
+            redirect_uri: redirectUri,
             grant_type: 'authorization_code',
             code_verifier: codeVerifier
           }).toString()
         });
 
         const tokens = await tokenResponse.json();
+        console.log('📥 Token response:', { hasAccessToken: !!tokens.access_token, error: tokens.error });
 
         if (tokens.error) {
           throw new Error(tokens.error_description || tokens.error);
         }
 
+        if (!tokens.access_token) {
+          throw new Error('No access token received from Google');
+        }
+
         // Store tokens
+        localStorage.setItem('google_oauth_tokens', JSON.stringify({
+          ...tokens,
+          expires_at: Date.now() + (tokens.expires_in * 1000)
+        }));
+
+        // Also store in the old format for compatibility
         localStorage.setItem('google_mvp_tokens', JSON.stringify({
           ...tokens,
           expires_at: Date.now() + (tokens.expires_in * 1000)
         }));
 
-        // Clean up
+        // Clean up OAuth state
         localStorage.removeItem('pkce_code_verifier');
         localStorage.removeItem('google_oauth_code_verifier');
         localStorage.removeItem('google_oauth_state');
         localStorage.removeItem('oauth_state');
 
-        console.log('✅ Google OAuth successful!');
+        console.log('✅ Google OAuth successful! Redirecting to integrations...');
 
-        // Redirect to integrations
-        navigate('/integrations', { replace: true });
+        // Notify parent window if opened in popup
+        if (window.opener) {
+          window.opener.postMessage({
+            type: 'OAUTH_SUCCESS',
+            data: { tokenResponse: tokens }
+          }, window.location.origin);
+          window.close();
+        } else {
+          // Redirect to integrations
+          navigate('/integrations', { replace: true });
+        }
       } catch (error) {
-        console.error('OAuth error:', error);
+        console.error('❌ OAuth error:', error);
+        alert(`OAuth failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         navigate('/integrations', { replace: true });
       }
     };
