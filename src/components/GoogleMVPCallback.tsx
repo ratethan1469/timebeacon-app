@@ -22,7 +22,8 @@ export const GoogleMVPCallback: React.FC = () => {
 
       try {
         // Get code verifier from localStorage (persists across redirects)
-        const codeVerifier = localStorage.getItem('pkce_code_verifier');
+        // Try both keys for compatibility
+        const codeVerifier = localStorage.getItem('google_oauth_code_verifier') || localStorage.getItem('pkce_code_verifier');
         if (!codeVerifier) {
           throw new Error('Code verifier not found');
         }
@@ -54,6 +55,8 @@ export const GoogleMVPCallback: React.FC = () => {
 
         // Clean up
         localStorage.removeItem('pkce_code_verifier');
+        localStorage.removeItem('google_oauth_code_verifier');
+        localStorage.removeItem('google_oauth_state');
         localStorage.removeItem('oauth_state');
 
         console.log('✅ Google OAuth successful!');
